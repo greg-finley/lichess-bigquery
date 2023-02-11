@@ -13,7 +13,7 @@ sudo apt-get update
 sudo apt-get install git
 sudo apt-get install python3-distutils
 curl -sSL https://install.python-poetry.org | python3 -
-vim .bashrc  export PATH="/home/gregoryfinley/.local/bin:$PATH"
+echo 'export PATH="/home/gregoryfinley/.local/bin:$PATH"' >> .bashrc
 sudo apt install python3 python3-dev python3-venv
 sudo apt-get install zstd
 ```
