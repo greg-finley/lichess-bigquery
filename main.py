@@ -47,40 +47,47 @@ def parse_game(game_str):
 
 print(parse_game(game_str))
 
-with open("moves.csv", "w") as csv_file:
-    writer = csv.writer(csv_file, delimiter=",")
-    # writer.writerow(["ply", "move", "clock", "eval", "game_id"])
-    game_id = ""
-    with open(file) as f:
-        for line in f:
-            if line.startswith("[Site"):
-                game_id = (
-                    line.split(" ")[1]
-                    .removeprefix('"https://lichess.org/')
-                    .removesuffix('"]\n')
-                )
+with open("games.json", "w") as games_json_file:
+    with open("moves.csv", "w") as moves_csv_file:
+        csv_writer = csv.writer(moves_csv_file, delimiter=",")
+        # csv_writer.writerow(["ply", "move", "clock", "eval", "game_id"])
+        game_id = ""
+        game = {}
+        with open(file) as f:
+            for line in f:
+                if line.startswith("["):
+                    if line.startswith("[Site"):
+                        game_id = (
+                            line.split(" ")[1]
+                            .removeprefix('"https://lichess.org/')
+                            .removesuffix('"]\n')
+                        )
+                    key = line.split(" ")[0].removeprefix("[")
+                    value = line.split(" ")[1].removesuffix("\n")
+                    game[key] = value
+                    if key in keys:
+                        keys[key] += 1
+                    else:
+                        keys[key] = 1
 
-            if line.startswith("1. "):
-                [writer.writerow(move + [game_id]) for move in parse_game(line)]
+                if line.startswith("1. "):
+                    [csv_writer.writerow(move + [game_id]) for move in parse_game(line)]
+                    games_json_file.write(str(game) + "\n")
 
-                num_games += 1
-            elif line.startswith("["):
-                key = line.split(" ")[0].removeprefix("[")
-                if key in keys:
-                    keys[key] += 1
-                else:
-                    keys[key] = 1
+                    num_games += 1
+
 
 print(num_games)
 print(keys)
-
-# TODO: Load the games as new-line delimited JSON. Games might have different keys
 
 # This will append if the table already exists
 os.system(
     "bq load lichess.moves_python moves.csv ply:integer,move:string,clock:string,eval:string,game_id:string"
 )
+os.system(
+    "bq load --source_format=NEWLINE_DELIMITED_JSON --autodetect lichess.games_python games.json"
+)
 
 os.system(
-    "rm lichess_db_racingKings_rated_2023-01.pgn.zst lichess_db_racingKings_rated_2023-01.pgn moves.csv"
+    "rm lichess_db_racingKings_rated_2023-01.pgn.zst lichess_db_racingKings_rated_2023-01.pgn moves.csv games.json"
 )
