@@ -33,7 +33,7 @@ def parse_game(game_str):
             except IndexError:
                 pass
 
-            moves.append((ply_num, move, clk, eval))
+            moves.append([ply_num, move, clk, eval])
 
     return moves
 
@@ -43,12 +43,18 @@ print(parse_game(game_str))
 with open("/Users/gregoryfinley/Downloads/moves.csv", "w") as csv_file:
     writer = csv.writer(csv_file, delimiter=",")
     writer.writerow(["ply", "move", "clock", "eval"])
+    game_id = ""
     with open(file) as f:
         for line in f:
+            if line.startswith("[Site"):
+                game_id = (
+                    line.split(" ")[1]
+                    .removeprefix('"https://lichess.org/')
+                    .removesuffix('"]\n')
+                )
+
             if line.startswith("1. "):
-                # 1. e4 { [%eval 0.17] [%clk 0:00:30] } 1... c5 { [%eval 0.19] [%clk 0:00:30] }
-                # 1. Kg3 { [%clk 0:00:30] } 1... Kb3 { [%clk 0:00:30] } 2. Kf4 { [%clk 0:00:29] } 2... Kc4 { [%clk 0:00:30] }
-                # Split the line into plies
+                [writer.writerow(move + [game_id]) for move in parse_game(line)]
 
                 num_games += 1
             elif line.startswith("["):
