@@ -1,6 +1,13 @@
 import csv
+import os
 
-file = "/Users/gregoryfinley/Downloads/lichess_db_racingKings_rated_2023-01.pgn"
+os.system(
+    "curl https://database.lichess.org/racingKings/lichess_db_racingKings_rated_2023-01.pgn.zst -o lichess_db_racingKings_rated_2023-01.pgn.zst"
+)
+
+os.system("pzstd -d lichess_db_racingKings_rated_2023-01.pgn.zst")
+
+file = "lichess_db_racingKings_rated_2023-01.pgn"
 
 num_games = 0
 keys = {}
@@ -40,7 +47,7 @@ def parse_game(game_str):
 
 print(parse_game(game_str))
 
-with open("/Users/gregoryfinley/Downloads/moves.csv", "w") as csv_file:
+with open("moves.csv", "w") as csv_file:
     writer = csv.writer(csv_file, delimiter=",")
     writer.writerow(["ply", "move", "clock", "eval", "game_id"])
     game_id = ""
