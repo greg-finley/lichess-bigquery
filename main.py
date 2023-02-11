@@ -9,34 +9,36 @@ moves = []
 
 game_str = "1. Kg3 { [%eval 0.19] [%clk 0:00:30] } 1... Kb3 { [%clk 0:00:29] } 2. Kf4 { [%clk 0:00:28] } 2... Kc4 { [%clk 0:00:27] } 3. Ke5 { [%clk 0:00:26] } 1-0"
 
-ply_num = 0
-game_split = game_str.split(" ")
-for i, part in enumerate(game_split):
-    if "." in part:
-        ply_num += 1
-        move = game_split[i + 1]
-        clk = ""
-        eval = ""
-        try:
-            if game_split[i + 2].startswith("{"):
-                print("Hi!")
-                j = i + 2
 
-                while not game_split[j].endswith("}"):
-                    print(game_split[j])
-                    if game_split[j].startswith("[%clk"):
-                        clk = game_split[j + 1].removesuffix("]")
-                    elif game_split[j].startswith("[%eval"):
-                        eval = game_split[j + 1].removesuffix("]")
-                    j += 1
+def parse_game(game_str):
+    moves = []
+    ply_num = 0
+    game_split = game_str.split(" ")
+    for i, part in enumerate(game_split):
+        if "." in part and not part.endswith("]"):
+            ply_num += 1
+            move = game_split[i + 1]
+            clk = ""
+            eval = ""
+            try:
+                if game_split[i + 2].startswith("{"):
+                    j = i + 2
+                    while not game_split[j].endswith("}"):
+                        if game_split[j].startswith("[%clk"):
+                            clk = game_split[j + 1].removesuffix("]")
+                        elif game_split[j].startswith("[%eval"):
+                            eval = game_split[j + 1].removesuffix("]")
+                        j += 1
 
-        except IndexError:
-            pass
+            except IndexError:
+                pass
 
-        moves.append((ply_num, move, clk, eval))
+            moves.append((ply_num, move, clk, eval))
+
+    return moves
 
 
-print(moves)
+print(parse_game(game_str))
 
 with open("/Users/gregoryfinley/Downloads/moves.csv", "w") as csv_file:
     writer = csv.writer(csv_file, delimiter=",")
