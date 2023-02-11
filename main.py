@@ -78,7 +78,7 @@ print(keys)
 
 # This will append if the table already exists
 os.system(
-    "bq load lichess.moves_python moves.csv ply:string,move:string,clock:string,eval:string,game_id:string"
+    "bq load lichess.moves_python moves.csv ply:integer,move:string,clock:string,eval:string,game_id:string"
 )
 
 os.system(
