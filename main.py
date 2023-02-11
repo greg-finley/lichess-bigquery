@@ -73,3 +73,11 @@ with open("moves.csv", "w") as csv_file:
 
 print(num_games)
 print(keys)
+
+os.system(
+    "bq load lichess.moves_python moves.csv ply:string,move:string,clock:string,eval:string,game_id:string"
+)
+
+os.system(
+    "rm lichess_db_racingKings_rated_2023-01.pgn.zst lichess_db_racingKings_rated_2023-01.pgn moves.csv"
+)
