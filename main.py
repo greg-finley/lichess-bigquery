@@ -74,6 +74,8 @@ with open("moves.csv", "w") as csv_file:
 print(num_games)
 print(keys)
 
+# TODO: Load the games as new-line delimited JSON. Games might have different keys
+
 # This will append if the table already exists
 os.system(
     "bq load lichess.moves_python moves.csv ply:string,move:string,clock:string,eval:string,game_id:string"
