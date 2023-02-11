@@ -1,5 +1,6 @@
 import csv
 import os
+import json
 
 os.system(
     "curl https://database.lichess.org/racingKings/lichess_db_racingKings_rated_2023-01.pgn.zst -o lichess_db_racingKings_rated_2023-01.pgn.zst"
@@ -72,7 +73,7 @@ with open("games.json", "w") as games_json_file:
 
                 if line.startswith("1. "):
                     [csv_writer.writerow(move + [game_id]) for move in parse_game(line)]
-                    games_json_file.write(str(game) + "\n")
+                    games_json_file.write(json.dumps(game) + "\n")
 
                     num_games += 1
 
