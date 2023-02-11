@@ -49,7 +49,7 @@ print(parse_game(game_str))
 
 with open("moves.csv", "w") as csv_file:
     writer = csv.writer(csv_file, delimiter=",")
-    writer.writerow(["ply", "move", "clock", "eval", "game_id"])
+    # writer.writerow(["ply", "move", "clock", "eval", "game_id"])
     game_id = ""
     with open(file) as f:
         for line in f:
