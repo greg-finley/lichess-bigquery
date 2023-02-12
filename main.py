@@ -15,10 +15,6 @@ file = "lichess_db_racingKings_rated_2023-01.pgn"
 num_games = 0
 keys = {}
 
-moves = []
-
-game_str = "1. Kg3 { [%eval 0.19] [%clk 0:00:30] } 1... Kb3 { [%clk 0:00:29] } 2. Kf4 { [%clk 0:00:28] } 2... Kc4 { [%clk 0:00:27] } 3. Ke5 { [%clk 0:00:26] } 1-0"
-
 
 def parse_game(game_str):
     moves = []
@@ -47,8 +43,6 @@ def parse_game(game_str):
 
     return moves
 
-
-print(parse_game(game_str))
 
 with open("games.json", "w") as games_json_file:
     with open("moves.csv", "w") as moves_csv_file:
