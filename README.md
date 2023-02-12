@@ -17,3 +17,9 @@ echo 'export PATH="/home/gregoryfinley/.local/bin:$PATH"' >> .bashrc
 sudo apt install python3 python3-dev python3-venv
 sudo apt-get install zstd
 ```
+
+## Potential space savings by recasting the data
+
+```sql
+SELECT * except (Variant, FEN, Site), case when Variant = 'Racing Kings' then 'RC' else Variant end as Variant, case when FEN = '8/8/8/8/8/8/krbnNBRK/qrbnNBRQ w - - 0 1' and Variant = 'Racing Kings' then null else FEN end as FEN, replace(Site, 'https://lichess.org/', '') as GameId FROM `greg-finley.lichess.games_python`
+```
