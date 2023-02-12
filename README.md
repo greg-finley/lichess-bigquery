@@ -1,5 +1,14 @@
 # lichess-bigquery
 
+## TODO
+
+1. Explain project
+2. Tell about how to sign up for BigQuery and give samples, how to find all available tables, how it's free up to certain limits, example how to use partitions
+3. Decide wildcard tables vs partitioned tables https://stackoverflow.com/a/48643151/3869802 Wildcard are probably better if inconsistent schemas for games?
+4. Ask Google Cloud sales about storage billing model https://cloud.google.com/bigquery/docs/updating-datasets#update_storage_billing_models
+
+## Sample query
+
 ```sql
 SELECT REGEXP_REPLACE(move, '[#!?]', '') as cleaned_move, case when mod(ply, 2) = 0 then 'black' else 'white' end as color, count(*) cnt FROM `greg-finley.lichess.moves_python`
 where ply > 20
