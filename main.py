@@ -8,6 +8,8 @@ os.system(
 
 os.system("pzstd -d lichess_db_racingKings_rated_2023-01.pgn.zst")
 
+os.system("rm lichess_db_racingKings_rated_2023-01.pgn.zst")
+
 file = "lichess_db_racingKings_rated_2023-01.pgn"
 
 num_games = 0
@@ -63,9 +65,20 @@ with open("games.json", "w") as games_json_file:
                             .removeprefix('"https://lichess.org/')
                             .removesuffix('"]\n')
                         )
+                    # line is [Event "Rated Racing Kings game"]
+                    # key is Event
+                    # value is Rated Racing Kings game
                     key = line.split(" ")[0].removeprefix("[")
-                    value = line.split(" ")[1].removesuffix("\n")
+                    value = (
+                        line.removeprefix(f"[{key} ")
+                        .removeprefix(
+                            '"'
+                        )  # Seems like always a quote here, but split into two removeprefixes just in case
+                        .removesuffix("]\n")
+                        .removesuffix('"')  # Ditto
+                    )
                     game[key] = value
+
                     if key in keys:
                         keys[key] += 1
                     else:
@@ -78,8 +91,8 @@ with open("games.json", "w") as games_json_file:
                     num_games += 1
 
 
-print(num_games)
-print(keys)
+print("Num games", num_games)
+print("Key count", keys)
 
 # This will append if the table already exists
 os.system(
@@ -89,6 +102,4 @@ os.system(
     "bq load --source_format=NEWLINE_DELIMITED_JSON --autodetect lichess.games_python games.json"
 )
 
-os.system(
-    "rm lichess_db_racingKings_rated_2023-01.pgn.zst lichess_db_racingKings_rated_2023-01.pgn moves.csv games.json"
-)
+os.system("rm lichess_db_racingKings_rated_2023-01.pgn moves.csv games.json")
