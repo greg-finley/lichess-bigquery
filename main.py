@@ -1,6 +1,7 @@
 import csv
 import os
 import json
+import datetime
 
 
 def parse_game(game_str):
@@ -32,6 +33,12 @@ def parse_game(game_str):
 
 
 def process_file(variant: str, year_month: str):
+    print(
+        "Starting",
+        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        variant,
+        year_month,
+    )
     os.system(
         f"curl https://database.lichess.org/{variant}/lichess_db_{variant}_rated_{year_month}.pgn.zst -o lichess_db_{variant}_rated_{year_month}.pgn.zst"
     )
@@ -102,6 +109,12 @@ def process_file(variant: str, year_month: str):
     )
 
     os.system(f"rm {pgn_filename} {moves_csv_filename} {games_json_filename}")
+    print(
+        "Done",
+        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        variant,
+        year_month,
+    )
 
 
 process_file("racingKings", "2023-01")
