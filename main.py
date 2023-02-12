@@ -46,7 +46,7 @@ def process_file(variant: str, year_month: str):
         year_month,
     )
     os_run(
-        f"curl https://database.lichess.org/{variant}/lichess_db_{variant}_rated_{year_month}.pgn.zst -o lichess_db_{variant}_rated_{year_month}.pgn.zst"
+        f"transmission-cli https://database.lichess.org/{variant}/lichess_db_{variant}_rated_{year_month}.pgn.zst.torrent -w ."
     )
 
     os_run(f"pzstd -d lichess_db_{variant}_rated_{year_month}.pgn.zst")
