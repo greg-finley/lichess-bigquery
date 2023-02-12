@@ -8,7 +8,6 @@
 4. Ask Google Cloud sales about storage billing model https://cloud.google.com/bigquery/docs/updating-datasets#update_storage_billing_models
 5. Handle parsing legacy move format (without ... for Black)
 6. Switch to torrent downloading
-7. os.system stop on error
 
 ## Sample query
 

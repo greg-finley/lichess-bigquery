@@ -32,6 +32,12 @@ def parse_game(game_str):
     return moves
 
 
+def os_run(command: str):
+    """Run os commands but stop if error"""
+    if os.system(command) != 0:
+        raise Exception(f"Error with {command}")
+
+
 def process_file(variant: str, year_month: str):
     print(
         "Starting",
@@ -39,13 +45,13 @@ def process_file(variant: str, year_month: str):
         variant,
         year_month,
     )
-    os.system(
+    os_run(
         f"curl https://database.lichess.org/{variant}/lichess_db_{variant}_rated_{year_month}.pgn.zst -o lichess_db_{variant}_rated_{year_month}.pgn.zst"
     )
 
-    os.system(f"pzstd -d lichess_db_{variant}_rated_{year_month}.pgn.zst")
+    os_run(f"pzstd -d lichess_db_{variant}_rated_{year_month}.pgn.zst")
 
-    os.system(f"rm lichess_db_{variant}_rated_{year_month}.pgn.zst")
+    os_run(f"rm lichess_db_{variant}_rated_{year_month}.pgn.zst")
 
     pgn_filename = f"lichess_db_{variant}_rated_{year_month}.pgn"
     games_json_filename = f"games_{variant}_{year_month}.json"
@@ -101,14 +107,14 @@ def process_file(variant: str, year_month: str):
     print("Key count", keys)
 
     # This will append if the table already exists
-    os.system(
+    os_run(
         f"bq load lichess.moves_{variant}_{year_month.replace('-', '_')} {moves_csv_filename} ply:integer,move:string,clock:string,eval:string,game_id:string"
     )
-    os.system(
+    os_run(
         f"bq load --source_format=NEWLINE_DELIMITED_JSON --autodetect lichess.games_{variant}_{year_month.replace('-', '_')} {games_json_filename}"
     )
 
-    os.system(f"rm {pgn_filename} {moves_csv_filename} {games_json_filename}")
+    os_run(f"rm {pgn_filename} {moves_csv_filename} {games_json_filename}")
     print(
         "Done",
         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
