@@ -7,6 +7,8 @@
 3. Decide wildcard tables vs partitioned tables https://stackoverflow.com/a/48643151/3869802 Wildcard are probably better if inconsistent schemas for games?
 4. Ask Google Cloud sales about storage billing model https://cloud.google.com/bigquery/docs/updating-datasets#update_storage_billing_models
 5. Handle parsing legacy move format (without ... for Black)
+6. Switch to torrent downloading
+7. os.system stop on error
 
 ## Sample query
 
