@@ -20,12 +20,13 @@ group by 1,2 order by 3 desc
 
 ```
 sudo apt-get update
-sudo apt-get install git
-sudo apt-get install python3-distutils
+sudo apt-get install git python3-distutils zstd -y
+sudo apt install python3 python3-dev python3-venv -y
 curl -sSL https://install.python-poetry.org | python3 -
-echo 'export PATH="/home/gregoryfinley/.local/bin:$PATH"' >> .bashrc
-sudo apt install python3 python3-dev python3-venv
-sudo apt-get install zstd
+echo 'export PATH="/home/gregoryfinley/.local/bin:$PATH"' >> /home/gregoryfinley/.bashrc
+source /home/gregoryfinley/.bashrc
+git clone https://github.com/greg-finley/lichess-bigquery
+cd lichess-bigquery && poetry install
 ```
 
 ## Potential space savings by recasting the data
