@@ -94,6 +94,12 @@ def process_file(variant: str, year_month: str):
                 for line in pgn_file:
                     if line.startswith("["):
                         if line.startswith("[Site"):
+                            if game.get("Site"):
+                                # The previous game has no moves, so write it out
+                                games_json_file.write(json.dumps(game) + "\n")
+                                game = {}
+
+                                num_games += 1
                             game_id = (
                                 line.split(" ")[1]
                                 .removeprefix('"https://lichess.org/')
@@ -118,12 +124,13 @@ def process_file(variant: str, year_month: str):
                         else:
                             keys[key] = 1
 
-                    if line.startswith("1. "):
+                    elif line.startswith("1. "):
                         [
                             csv_writer.writerow(move + [game_id])
                             for move in parse_game(line)
                         ]
                         games_json_file.write(json.dumps(game) + "\n")
+                        game = {}
 
                         num_games += 1
 
@@ -147,4 +154,4 @@ def process_file(variant: str, year_month: str):
     )
 
 
-process_file("racingKings", "2022-11")
+process_file("racingKings", "2023-01")
