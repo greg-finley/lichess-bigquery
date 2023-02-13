@@ -135,6 +135,11 @@ def process_file(variant: str, year_month: str):
 
                         num_games += 1
 
+            # If there is a game at the end of the file with no moves, write it out
+            if game:
+                games_json_file.write(json.dumps(game) + "\n")
+                num_games += 1
+
     print("Num games", num_games)
     print("Key count", keys)
 
@@ -157,4 +162,4 @@ def process_file(variant: str, year_month: str):
     )
 
 
-process_file("racingKings", "2023-01")
+process_file("racingKings", "2022-12")
