@@ -120,5 +120,9 @@ def process_file(variant: str, year_month: str):
     )
 
 
-process_file("racingKings", "2016-01")
-process_file("racingKings", "2023-01")
+# For all months between 2016-01 and 2023-01 inclusive, do the racingKings variant
+for year in range(2016, 2024):
+    for month in range(1, 13):
+        if year == 2023 and month == 2:
+            break
+        process_file("racingKings", f"{year}-{month:02d}")
