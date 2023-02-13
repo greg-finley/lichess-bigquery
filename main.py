@@ -69,13 +69,13 @@ def process_file(variant: str, year_month: str):
         year_month,
     )
 
-    # os_run(
-    #     f"curl https://database.lichess.org/{variant}/lichess_db_{variant}_rated_{year_month}.pgn.zst --output lichess_db_{variant}_rated_{year_month}.pgn.zst"
-    # )
+    os_run(
+        f"curl https://database.lichess.org/{variant}/lichess_db_{variant}_rated_{year_month}.pgn.zst --output lichess_db_{variant}_rated_{year_month}.pgn.zst"
+    )
 
-    # os_run(f"pzstd -d lichess_db_{variant}_rated_{year_month}.pgn.zst")
+    os_run(f"pzstd -d lichess_db_{variant}_rated_{year_month}.pgn.zst")
 
-    # os_run(f"rm lichess_db_{variant}_rated_{year_month}.pgn.zst")
+    os_run(f"rm lichess_db_{variant}_rated_{year_month}.pgn.zst")
 
     pgn_filename = f"lichess_db_{variant}_rated_{year_month}.pgn"
     games_json_filename = f"games_{variant}_{year_month}.json"
@@ -147,4 +147,4 @@ def process_file(variant: str, year_month: str):
     )
 
 
-process_file("racingKings", "2016-01")
+process_file("racingKings", "2022-11")
