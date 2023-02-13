@@ -2,3 +2,4 @@ lichess_db*
 games*.json
 moves*.csv
 existing_tables.txt
+.vscode

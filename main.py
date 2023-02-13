@@ -1,64 +1,25 @@
 import csv
-import os
-import json
 import datetime
+import json
+import os
 
-SCORES = ["1-0\n", "0-1\n", "1/2-1/2\n"]
-
-
-def parse_game(game_str):
-    moves = []
-    ply_num = 0
-    game_split = game_str.split(" ")
-    if not "..." in game_str:
-        # Assume it's an old-style game, like
-        # 1. Kh3 Rb4 2. Rg4 Be4 3. Kh4 0-1
-        for i, part in enumerate(game_split):
-            if "." in part:
-                ply_num += 1
-                move = game_split[i + 1]
-                if move in SCORES:
-                    break
-                moves.append([ply_num, move, "", ""])
-                # Try to add black's move. Might not be present at the end of the game
-                try:
-                    maybe_black_move = game_split[i + 2]
-                    if maybe_black_move not in SCORES:
-                        moves.append([ply_num, maybe_black_move, "", ""])
-                except IndexError:
-                    pass
-
-    # Otherwise, assume it's a new-style game, like
-    # 1. e4 { [%eval 0.17] [%clk 0:00:30] } 1... c5 { [%eval 0.19] [%clk 0:00:30] }
-    else:
-        for i, part in enumerate(game_split):
-            if "." in part and not part.endswith("]"):
-                ply_num += 1
-                move = game_split[i + 1]
-                clk = ""
-                eval = ""
-                try:
-                    if game_split[i + 2].startswith("{"):
-                        j = i + 2
-                        while not game_split[j].endswith("}"):
-                            if game_split[j].startswith("[%clk"):
-                                clk = game_split[j + 1].removesuffix("]")
-                            elif game_split[j].startswith("[%eval"):
-                                eval = game_split[j + 1].removesuffix("]")
-                            j += 1
-
-                except IndexError:
-                    pass
-
-                moves.append([ply_num, move, clk, eval])
-
-    return moves
+import chess.pgn
 
 
 def os_run(command: str):
     """Run os commands but stop if error"""
     if os.system(command) != 0:
         raise Exception(f"Error with {command}")
+
+
+def ply_to_move(ply: int):
+    """Converts a ply to a move number"""
+    return int((ply + 1) / 2)
+
+
+def ply_to_color(ply: int):
+    """Converts a ply to a color"""
+    return "White" if ply % 2 == 0 else "Black"
 
 
 def process_file(variant: str, year_month: str):
@@ -81,72 +42,40 @@ def process_file(variant: str, year_month: str):
     games_json_filename = f"games_{variant}_{year_month}.json"
     moves_csv_filename = f"moves_{variant}_{year_month}.csv"
 
-    num_games = 0
-    keys = {}
-
     with open(games_json_filename, "w") as games_json_file:
         with open(moves_csv_filename, "w") as moves_csv_file:
             csv_writer = csv.writer(moves_csv_file, delimiter=",")
-            # csv_writer.writerow(["ply", "move", "clock", "eval", "game_id"])
-            game_id = ""
-            game = {}
             with open(pgn_filename) as pgn_file:
-                for line in pgn_file:
-                    if line.startswith("["):
-                        if line.startswith("[Site"):
-                            if game.get("Site"):
-                                # The previous game has no moves, so write it out
-                                games_json_file.write(json.dumps(game) + "\n")
-                                game = {}
+                while True:
+                    game = chess.pgn.read_game(pgn_file)
+                    if not game:
+                        break
 
-                                num_games += 1
-                            game_id = (
-                                line.split(" ")[1]
-                                .removeprefix('"https://lichess.org/')
-                                .removesuffix('"]\n')
-                            )
-                            game["game_id"] = game_id
-                        # line is [Event "Rated Racing Kings game"]
-                        # key is Event
-                        # value is Rated Racing Kings game
-                        key = line.split(" ")[0].removeprefix("[")
-                        value = (
-                            line.removeprefix(f"[{key} ")
-                            .removeprefix(
-                                '"'
-                            )  # Seems like always a quote here, but split into two removeprefixes just in case
-                            .removesuffix("]\n")
-                            .removesuffix('"')  # Ditto
+                    game_dict = {}
+                    for h in game.headers:
+                        game_dict[h] = game.headers[h]
+                    game_dict["GameId"] = game_dict["Site"].split("/")[-1]
+                    games_json_file.write(json.dumps(game_dict) + "\n")
+                    for node in game.mainline():
+                        csv_writer.writerow(
+                            [
+                                game_dict["GameId"],
+                                node.ply(),
+                                ply_to_move(node.ply()),
+                                ply_to_color(node.ply()),
+                                node.san(),
+                                node.uci(),
+                                node.clock(),
+                                node.eval(),
+                                node.board().fen(),
+                                node.board().shredder_fen(),
+                            ]
                         )
-                        game[key] = value
-
-                        if key in keys:
-                            keys[key] += 1
-                        else:
-                            keys[key] = 1
-
-                    elif line.startswith("1. "):
-                        [
-                            csv_writer.writerow(move + [game_id])
-                            for move in parse_game(line)
-                        ]
-                        games_json_file.write(json.dumps(game) + "\n")
-                        game = {}
-
-                        num_games += 1
-
-            # If there is a game at the end of the file with no moves, write it out
-            if game:
-                games_json_file.write(json.dumps(game) + "\n")
-                num_games += 1
-
-    print("Num games", num_games)
-    print("Key count", keys)
 
     # This will append if the table already exists
     # The moves schema is fixed, so we load as a CSV (highest BQ size limit)
     os_run(
-        f"bq load lichess.moves_{variant}_{year_month.replace('-', '_')} {moves_csv_filename} ply:integer,move:string,clock:string,eval:string,game_id:string"
+        f"bq load lichess.moves_{variant}_{year_month.replace('-', '_')} {moves_csv_filename} game_id:string,ply:integer,move:integer,color:string,san:string,uci:string,clock:string,eval:string,fen:string,shredder_fen:string"
     )
     # Each game could have a variety of keys, and it could change over time. Load as JSON so the eventual table gets all possible keys
     os_run(
@@ -162,4 +91,5 @@ def process_file(variant: str, year_month: str):
     )
 
 
-process_file("racingKings", "2022-12")
+process_file("racingKings", "2016-01")
+process_file("racingKings", "2023-01")
