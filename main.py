@@ -139,9 +139,11 @@ def process_file(variant: str, year_month: str):
     print("Key count", keys)
 
     # This will append if the table already exists
+    # The moves schema is fixed, so we load as a CSV (highest BQ size limit)
     os_run(
         f"bq load lichess.moves_{variant}_{year_month.replace('-', '_')} {moves_csv_filename} ply:integer,move:string,clock:string,eval:string,game_id:string"
     )
+    # Each game could have a variety of keys, and it could change over time. Load as JSON so the eventual table gets all possible keys
     os_run(
         f"bq load --source_format=NEWLINE_DELIMITED_JSON --autodetect lichess.games_{variant}_{year_month.replace('-', '_')} {games_json_filename}"
     )
