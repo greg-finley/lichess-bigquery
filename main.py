@@ -105,6 +105,7 @@ def process_file(variant: str, year_month: str):
                                 .removeprefix('"https://lichess.org/')
                                 .removesuffix('"]\n')
                             )
+                            game["game_id"] = game_id
                         # line is [Event "Rated Racing Kings game"]
                         # key is Event
                         # value is Rated Racing Kings game
