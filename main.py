@@ -3,7 +3,7 @@ import os
 import json
 import datetime
 
-ENDINGS = ["1-0\n", "0-1\n", "1/2-1/2\n"]
+SCORES = ["1-0\n", "0-1\n", "1/2-1/2\n"]
 
 
 def parse_game(game_str):
@@ -17,13 +17,13 @@ def parse_game(game_str):
             if "." in part:
                 ply_num += 1
                 move = game_split[i + 1]
-                if move in ENDINGS:
+                if move in SCORES:
                     break
                 moves.append([ply_num, move, "", ""])
                 # Try to add black's move. Might not be present at the end of the game
                 try:
                     maybe_black_move = game_split[i + 2]
-                    if maybe_black_move not in ENDINGS:
+                    if maybe_black_move not in SCORES:
                         moves.append([ply_num, maybe_black_move, "", ""])
                 except IndexError:
                     pass
