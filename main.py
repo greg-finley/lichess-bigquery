@@ -4,6 +4,7 @@ import json
 import os
 
 import chess.pgn
+from chess.engine import Cp, Mate
 
 
 def os_run(command: str):
@@ -69,6 +70,22 @@ def process_file(variant: str, year_month: str):
                     for node in game.mainline():
                         ply = node.ply()
                         board = node.board()
+
+                        eval = node.eval()
+                        if eval is None:
+                            clean_eval = None
+                        else:
+                            eval_white = eval.white()
+                            if isinstance(eval_white, Cp):
+                                clean_eval = f"{eval_white.cp / 100.0:.2f}"
+                            elif isinstance(eval_white, Mate):
+                                mate_moves = eval_white.mate()
+                                if mate_moves > 0:
+                                    clean_eval = f"#{mate_moves}"
+                                else:
+                                    clean_eval = f"-#{-mate_moves}"
+                            else:
+                                clean_eval = None
                         csv_writer.writerow(
                             [
                                 game_dict["GameId"],
@@ -78,7 +95,7 @@ def process_file(variant: str, year_month: str):
                                 node.san(),
                                 node.uci(),
                                 node.clock(),
-                                node.eval(),
+                                clean_eval,
                                 board.fen(),
                                 board.shredder_fen(),
                             ]
