@@ -48,7 +48,7 @@ def process_file(variant: str, year_month: str):
     )
 
     os_run(
-        f"wget https://database.lichess.org/{variant}/lichess_db_{variant}_rated_{year_month}.pgn.zst.torrent"
+        f"curl https://database.lichess.org/{variant}/lichess_db_{variant}_rated_{year_month}.pgn.zst.torrent --output lichess_db_{variant}_rated_{year_month}.pgn.zst.torrent"
     )
 
     torrent_file = TorrentDownloader(
