@@ -2,6 +2,7 @@ import csv
 import os
 import json
 import datetime
+from torrentp import TorrentDownloader  # type: ignore
 
 
 def parse_game(game_str):
@@ -45,9 +46,12 @@ def process_file(variant: str, year_month: str):
         variant,
         year_month,
     )
-    os_run(
-        f"transmission-cli https://database.lichess.org/{variant}/lichess_db_{variant}_rated_{year_month}.pgn.zst.torrent -w ."
+
+    torrent_file = TorrentDownloader(
+        "https://database.lichess.org/{variant}/lichess_db_{variant}_rated_{year_month}.pgn.zst.torrent",
+        ".",
     )
+    torrent_file.start_download()
 
     os_run(f"pzstd -d lichess_db_{variant}_rated_{year_month}.pgn.zst")
 
@@ -123,4 +127,4 @@ def process_file(variant: str, year_month: str):
     )
 
 
-process_file("racingKings", "2023-01")
+process_file("racingKings", "2022-12")

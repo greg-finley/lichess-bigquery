@@ -7,6 +7,7 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.9"
+torrentp = "^0.1.5"
 
 [tool.poetry.dev-dependencies]
 
