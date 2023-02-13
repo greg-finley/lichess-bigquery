@@ -24,7 +24,7 @@ def parse_game(game_str):
                 try:
                     maybe_black_move = game_split[i + 2]
                     if maybe_black_move not in ENDINGS:
-                        moves.append([ply_num, game_split[i + 2], "", ""])
+                        moves.append([ply_num, maybe_black_move, "", ""])
                 except IndexError:
                     pass
 
