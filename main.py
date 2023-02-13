@@ -2,7 +2,6 @@ import csv
 import os
 import json
 import datetime
-from torrentp import TorrentDownloader  # type: ignore
 
 
 def parse_game(game_str):
@@ -48,14 +47,8 @@ def process_file(variant: str, year_month: str):
     )
 
     os_run(
-        f"curl https://database.lichess.org/{variant}/lichess_db_{variant}_rated_{year_month}.pgn.zst.torrent --output lichess_db_{variant}_rated_{year_month}.pgn.zst.torrent"
+        f"curl https://database.lichess.org/{variant}/lichess_db_{variant}_rated_{year_month}.pgn.zst --output lichess_db_{variant}_rated_{year_month}.pgn.zst"
     )
-
-    torrent_file = TorrentDownloader(
-        "lichess_db_{variant}_rated_{year_month}.pgn.zst.torrent",
-        ".",
-    )
-    torrent_file.start_download()
 
     os_run(f"pzstd -d lichess_db_{variant}_rated_{year_month}.pgn.zst")
 
