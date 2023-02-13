@@ -3,31 +3,54 @@ import os
 import json
 import datetime
 
+ENDINGS = ["1-0\n", "0-1\n", "1/2-1/2\n"]
+
 
 def parse_game(game_str):
     moves = []
     ply_num = 0
     game_split = game_str.split(" ")
-    for i, part in enumerate(game_split):
-        if "." in part and not part.endswith("]"):
-            ply_num += 1
-            move = game_split[i + 1]
-            clk = ""
-            eval = ""
-            try:
-                if game_split[i + 2].startswith("{"):
-                    j = i + 2
-                    while not game_split[j].endswith("}"):
-                        if game_split[j].startswith("[%clk"):
-                            clk = game_split[j + 1].removesuffix("]")
-                        elif game_split[j].startswith("[%eval"):
-                            eval = game_split[j + 1].removesuffix("]")
-                        j += 1
+    if not "..." in game_str:
+        # Assume it's an old-style game, like
+        # 1. Kh3 Rb4 2. Rg4 Be4 3. Kh4 0-1
+        for i, part in enumerate(game_split):
+            if "." in part:
+                ply_num += 1
+                move = game_split[i + 1]
+                if move in ENDINGS:
+                    break
+                moves.append([ply_num, move, "", ""])
+                # Try to add black's move. Might not be present at the end of the game
+                try:
+                    maybe_black_move = game_split[i + 2]
+                    if maybe_black_move not in ENDINGS:
+                        moves.append([ply_num, game_split[i + 2], "", ""])
+                except IndexError:
+                    pass
 
-            except IndexError:
-                pass
+    # Otherwise, assume it's a new-style game, like
+    # 1. e4 { [%eval 0.17] [%clk 0:00:30] } 1... c5 { [%eval 0.19] [%clk 0:00:30] }
+    else:
+        for i, part in enumerate(game_split):
+            if "." in part and not part.endswith("]"):
+                ply_num += 1
+                move = game_split[i + 1]
+                clk = ""
+                eval = ""
+                try:
+                    if game_split[i + 2].startswith("{"):
+                        j = i + 2
+                        while not game_split[j].endswith("}"):
+                            if game_split[j].startswith("[%clk"):
+                                clk = game_split[j + 1].removesuffix("]")
+                            elif game_split[j].startswith("[%eval"):
+                                eval = game_split[j + 1].removesuffix("]")
+                            j += 1
 
-            moves.append([ply_num, move, clk, eval])
+                except IndexError:
+                    pass
+
+                moves.append([ply_num, move, clk, eval])
 
     return moves
 
@@ -46,13 +69,13 @@ def process_file(variant: str, year_month: str):
         year_month,
     )
 
-    os_run(
-        f"curl https://database.lichess.org/{variant}/lichess_db_{variant}_rated_{year_month}.pgn.zst --output lichess_db_{variant}_rated_{year_month}.pgn.zst"
-    )
+    # os_run(
+    #     f"curl https://database.lichess.org/{variant}/lichess_db_{variant}_rated_{year_month}.pgn.zst --output lichess_db_{variant}_rated_{year_month}.pgn.zst"
+    # )
 
-    os_run(f"pzstd -d lichess_db_{variant}_rated_{year_month}.pgn.zst")
+    # os_run(f"pzstd -d lichess_db_{variant}_rated_{year_month}.pgn.zst")
 
-    os_run(f"rm lichess_db_{variant}_rated_{year_month}.pgn.zst")
+    # os_run(f"rm lichess_db_{variant}_rated_{year_month}.pgn.zst")
 
     pgn_filename = f"lichess_db_{variant}_rated_{year_month}.pgn"
     games_json_filename = f"games_{variant}_{year_month}.json"
@@ -124,4 +147,4 @@ def process_file(variant: str, year_month: str):
     )
 
 
-process_file("racingKings", "2022-12")
+process_file("racingKings", "2016-01")
