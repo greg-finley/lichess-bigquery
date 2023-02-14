@@ -31,8 +31,14 @@ cd lichess-bigquery && poetry install
 
 `nohup python3 -u main.py &`
 
-## Potential space savings by recasting the data
+## Games without moves
 
 ```sql
-SELECT * except (Variant, FEN, Site), case when Variant = 'Racing Kings' then 'RC' else Variant end as Variant, case when FEN = '8/8/8/8/8/8/krbnNBRK/qrbnNBRQ w - - 0 1' and Variant = 'Racing Kings' then null else FEN end as FEN, replace(Site, 'https://lichess.org/', '') as GameId FROM `greg-finley.lichess.games_python`
+with moves as (SELECT game_id FROM `greg-finley.lichess.moves_antichess_2014_12`
+group by 1)
+select g.* from `greg-finley.lichess.games_antichess_2014_12` g
+left join moves
+on moves.game_id = g.GameId
+where moves.game_id is null
+limit 100
 ```
