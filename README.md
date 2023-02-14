@@ -29,7 +29,8 @@ This library exposes the [Lichess database](https://database.lichess.org/) as pu
 
 ```
 sudo apt-get update
-sudo apt-get install git python3-distutils zstd -y
+sudo apt install python3-pip -y
+sudo apt-get install git zstd -y
 sudo apt install python3 python3-dev python3-venv -y
 curl -sSL https://install.python-poetry.org | python3 -
 echo 'export PATH="/home/gregoryfinley/.local/bin:$PATH"' >> /home/gregoryfinley/.bashrc
@@ -50,4 +51,10 @@ left join moves
 on moves.game_id = g.GameId
 where moves.game_id is null
 limit 100
+```
+
+# Poetry to requirements.txt
+
+```shell
+poetry export -f requirements.txt --output requirements.txt --without-hashes
 ```
