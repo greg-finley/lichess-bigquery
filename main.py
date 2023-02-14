@@ -48,8 +48,13 @@ def process_file(variant: str, year_month: str):
             csv_writer = csv.writer(moves_csv_file, delimiter=",")
             with open(pgn_filename) as pgn_file:
                 num_games = 0
+                last_game_id: str | None = None
                 while True:
-                    game = chess.pgn.read_game(pgn_file)
+                    try:
+                        game = chess.pgn.read_game(pgn_file)
+                    except Exception:
+                        print("Exception after game ", last_game_id)
+                        raise
                     if not game:
                         break
 
@@ -100,6 +105,7 @@ def process_file(variant: str, year_month: str):
                                 board.shredder_fen(),
                             ]
                         )
+                    last_game_id = game_dict["GameId"]
 
     # This will append if the table already exists
     # The moves schema is fixed, so we load as a CSV (highest BQ size limit)
@@ -120,9 +126,10 @@ def process_file(variant: str, year_month: str):
     )
 
 
-# For all months between 2016-01 and 2023-01 inclusive, do the racingKings variant
-for year in range(2016, 2024):
+for year in range(2014, 2024):
     for month in range(1, 13):
+        if year == 2014 and month < 12:
+            continue
         if year == 2023 and month == 2:
             break
-        process_file("racingKings", f"{year}-{month:02d}")
+        process_file("antichess", f"{year}-{month:02d}")

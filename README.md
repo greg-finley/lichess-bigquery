@@ -29,6 +29,8 @@ git clone https://github.com/greg-finley/lichess-bigquery
 cd lichess-bigquery && poetry install
 ```
 
+`nohup python3 -u main.py &`
+
 ## Potential space savings by recasting the data
 
 ```sql
