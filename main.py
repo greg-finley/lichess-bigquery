@@ -104,7 +104,7 @@ def process_file(variant: str, year_month: str):
     # This will append if the table already exists
     # The moves schema is fixed, so we load as a CSV (highest BQ size limit)
     os_run(
-        f"bq load lichess.moves_{variant}_{year_month.replace('-', '_')} {moves_csv_filename} game_id:string,ply:integer,move:integer,color:string,san:string,uci:string,clock:string,eval:string,fen:string,shredder_fen:string"
+        f"bq load lichess.moves_{variant}_{year_month.replace('-', '_')} {moves_csv_filename} game_id:string,ply:integer,move:integer,color:string,san:string,uci:string,clock:float64,eval:string,fen:string,shredder_fen:string"
     )
     # Each game could have a variety of keys, and it could change over time. Load as JSON so the eventual table gets all possible keys
     os_run(
