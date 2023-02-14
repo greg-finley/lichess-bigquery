@@ -20,7 +20,7 @@ def ply_to_move(ply: int):
 
 def ply_to_color(ply: int):
     """Converts a ply to a color"""
-    return "White" if ply % 2 == 0 else "Black"
+    return "White" if ply % 2 != 0 else "Black"
 
 
 def process_file(variant: str, year_month: str):
