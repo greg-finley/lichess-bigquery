@@ -48,13 +48,8 @@ def process_file(variant: str, year_month: str):
             csv_writer = csv.writer(moves_csv_file, delimiter=",")
             with open(pgn_filename) as pgn_file:
                 num_games = 0
-                last_game_id: str | None = None
                 while True:
-                    try:
-                        game = chess.pgn.read_game(pgn_file)
-                    except Exception:
-                        print("Exception after game ", last_game_id)
-                        raise
+                    game = chess.pgn.read_game(pgn_file)
                     if not game:
                         break
 
@@ -105,7 +100,6 @@ def process_file(variant: str, year_month: str):
                                 board.shredder_fen(),
                             ]
                         )
-                    last_game_id = game_dict["GameId"]
 
     # This will append if the table already exists
     # The moves schema is fixed, so we load as a CSV (highest BQ size limit)
