@@ -77,7 +77,7 @@ def process_file(variant: str, year_month: str):
                         else:
                             eval_white = eval.white()
                             if isinstance(eval_white, Cp):
-                                clean_eval = f"{eval_white.cp / 100.0:.2f}"
+                                clean_eval = f"{eval_white.cp / 100.0:.2f}"  # type: ignore
                             elif isinstance(eval_white, Mate):
                                 mate_moves = eval_white.mate()
                                 if mate_moves > 0:
