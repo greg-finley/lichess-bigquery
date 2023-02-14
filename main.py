@@ -42,6 +42,11 @@ def process_file(variant: str, year_month: str):
     pgn_filename = f"lichess_db_{variant}_rated_{year_month}.pgn"
     games_json_filename = f"games_{variant}_{year_month}.json"
     moves_csv_filename = f"moves_{variant}_{year_month}.csv"
+    games_schema_filename = f"games_{variant}_{year_month}.schema"
+
+    # We need to collect the header keys for all games and tell BigQuery to
+    # make the table with these columns all as strings
+    game_header_keys: set[str] = set()
 
     with open(games_json_filename, "w") as games_json_file:
         with open(moves_csv_filename, "w") as moves_csv_file:
@@ -65,6 +70,7 @@ def process_file(variant: str, year_month: str):
                     game_dict = {}
                     for h in game.headers:
                         game_dict[h] = game.headers[h]
+                        game_header_keys.add(h)
                     game_dict["GameId"] = game_dict["Site"].split("/")[-1]
                     games_json_file.write(json.dumps(game_dict) + "\n")
                     for node in game.mainline():
@@ -101,6 +107,11 @@ def process_file(variant: str, year_month: str):
                             ]
                         )
 
+    with open(games_schema_filename, "w") as games_schema_file:
+        games_schema_file.write(
+            json.dumps([{"name": k, "type": "STRING"} for k in game_header_keys])
+        )
+
     # This will append if the table already exists
     # The moves schema is fixed, so we load as a CSV (highest BQ size limit)
     os_run(
@@ -108,10 +119,12 @@ def process_file(variant: str, year_month: str):
     )
     # Each game could have a variety of keys, and it could change over time. Load as JSON so the eventual table gets all possible keys
     os_run(
-        f"bq load --source_format=NEWLINE_DELIMITED_JSON --autodetect lichess.games_{variant}_{year_month.replace('-', '_')} {games_json_filename}"
+        f"bq load --source_format=NEWLINE_DELIMITED_JSON lichess.games_{variant}_{year_month.replace('-', '_')} {games_json_filename} {games_schema_filename}"
     )
 
-    os_run(f"rm {pgn_filename} {moves_csv_filename} {games_json_filename}")
+    os_run(
+        f"rm {pgn_filename} {moves_csv_filename} {games_json_filename} {games_schema_filename}"
+    )
     print(
         "Done",
         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
