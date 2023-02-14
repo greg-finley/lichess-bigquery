@@ -49,8 +49,14 @@ where moves.game_id is null
 limit 100
 ```
 
-# Poetry to requirements.txt
+## Poetry to requirements.txt
 
 ```shell
 poetry export -f requirements.txt --output requirements.txt --without-hashes
 ```
+
+## Loading plan
+
+1. VM downloads PNG from torrents, loads small PNGs to GCS
+2. Cloud functions process PNGs, load games JSON to GCS and moves CSV to BigQuery, deleting original GCS object
+3. When all JSON is there, another job gets all the unique keys and combines it all and loads to BQ
