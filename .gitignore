@@ -3,3 +3,5 @@ games*.json
 moves*.csv
 existing_tables.txt
 .vscode
+column.csv
+commands.txt
