@@ -1,5 +1,15 @@
 # lichess-bigquery
 
+## What
+
+This library exposes the [Lichess database](https://database.lichess.org/) as a Google BigQuery tables that anyone can query.
+
+## Why
+
+1. Dive straight into the data without having to parse or store it yourself. The history of Standard lichess games is about 7 TB uncompressed.
+2. Extract subsets of games (your games, tournament games, grandmasters whose handles start with the letter "d") without having to parse irrelevant games.
+3. Do fun stuff with SQL! (EXPAND WITH EXAMPLES)
+
 ## TODO
 
 1. Explain project
@@ -7,13 +17,12 @@
 3. Ask Google Cloud sales about storage billing model https://cloud.google.com/bigquery/docs/updating-datasets#update_storage_billing_models
 4. Handle all the giant files for standard chess
 
-## Sample query
+## Sample queries
 
-```sql
-SELECT REGEXP_REPLACE(move, '[#!?]', '') as cleaned_move, case when mod(ply, 2) = 0 then 'black' else 'white' end as color, count(*) cnt FROM `greg-finley.lichess.moves_python`
-where ply > 20
-group by 1,2 order by 3 desc
-```
+(TO COME)
+
+- Has someone put a knight on all four corners of the board at some point in a game and still won?
+- Reproduce some of the analysis from Lichess Game Insights
 
 ## Setting up a VM to run this script
 
