@@ -6,3 +6,5 @@ existing_tables.txt
 column.csv
 commands.txt
 *.pgn
+*.schema
+nohup.out

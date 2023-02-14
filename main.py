@@ -47,6 +47,7 @@ def process_file(variant: str, year_month: str):
     # We need to collect the header keys for all games and tell BigQuery to
     # make the table with these columns all as strings
     game_header_keys: set[str] = set()
+    game_header_keys.add("GameId")
 
     with open(games_json_filename, "w") as games_json_file:
         with open(moves_csv_filename, "w") as moves_csv_file:
@@ -133,10 +134,10 @@ def process_file(variant: str, year_month: str):
     )
 
 
-for year in range(2014, 2024):
+for year in range(2021, 2024):
     for month in range(1, 13):
-        if year == 2014 and month < 12:
+        if year == 2021 and month < 2:
             continue
         if year == 2023 and month == 2:
             break
-        process_file("antichess", f"{year}-{month:02d}")
+        process_file("racingKings", f"{year}-{month:02d}")
