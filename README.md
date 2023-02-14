@@ -31,12 +31,8 @@ This library exposes the [Lichess database](https://database.lichess.org/) as pu
 sudo apt-get update
 sudo apt install python3-pip -y
 sudo apt-get install git zstd -y
-sudo apt install python3 python3-dev python3-venv -y
-curl -sSL https://install.python-poetry.org | python3 -
-echo 'export PATH="/home/gregoryfinley/.local/bin:$PATH"' >> /home/gregoryfinley/.bashrc
-source /home/gregoryfinley/.bashrc
 git clone https://github.com/greg-finley/lichess-bigquery
-cd lichess-bigquery && poetry install
+cd lichess-bigquery && pip install -r requirements.txt
 ```
 
 `nohup python3 -u main.py &`
