@@ -2,7 +2,7 @@
 
 ## What
 
-This library exposes the [Lichess database](https://database.lichess.org/) as a Google BigQuery tables that anyone can query.
+This library exposes the [Lichess database](https://database.lichess.org/) as public Google BigQuery tables that anyone can query.
 
 ## Why
 
@@ -16,6 +16,7 @@ This library exposes the [Lichess database](https://database.lichess.org/) as a 
 2. Tell about how to sign up for BigQuery and give samples, how to find all available tables, how it's free up to certain limits, example how to use partitions
 3. Ask Google Cloud sales about storage billing model https://cloud.google.com/bigquery/docs/updating-datasets#update_storage_billing_models
 4. Handle all the giant files for standard chess
+5. Section encouraging people to tell me if they did anything interesting with the data
 
 ## Sample queries
 
