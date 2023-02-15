@@ -86,7 +86,7 @@ def create_bigquery_table(
     table_ref = bigquery_client.dataset(dataset_id).table(table_id)
     table = bigquery.Table(table_ref, schema=schema)
     print(f"Creating table {table_id}")
-    return bigquery_client.create_table(table)
+    return bigquery_client.create_table(table, exists_ok=True)
 
 
 def process_pgn(event, context):
