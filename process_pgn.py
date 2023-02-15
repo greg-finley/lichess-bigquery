@@ -8,7 +8,7 @@ from google.cloud import bigquery, storage
 """A cloud function to process a PGN file and load it to BigQuery staging area"""
 
 Data = list[dict[str, Any]]
-dataset_id = "lichess_staging"
+dataset_id = "lichessstaging"
 storage_client = storage.Client()
 bigquery_client = bigquery.Client()
 
