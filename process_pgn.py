@@ -137,6 +137,10 @@ def process_pgn(event, context):
             for h in game.headers:
                 game_dict[h] = game.headers[h]
             game_dict["GameId"] = game_dict["Site"].split("/")[-1]
+            # for any missing header keys, add them with a null value
+            for k in game_header_keys:
+                if k not in game_dict:
+                    game_dict[k] = None
             games.append(game_dict)
             for node in game.mainline():
                 ply = node.ply()
