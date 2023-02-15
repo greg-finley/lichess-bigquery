@@ -10,10 +10,7 @@ from google.cloud import bigquery, storage
 """A cloud function to process a PGN file and load it to BigQuery staging area"""
 
 Data = list[dict[str, Any]]
-# Games have varying keys, so we need to collect them all in staging tables
-staging_dataset_id = "lichessstaging"
-# Moves have a fixed schema, so we can load them directly to the final table
-prod_dataset_id = "lichess"
+dataset_id = "lichessstaging"
 storage_client = storage.Client()
 bigquery_client = bigquery.Client()
 
@@ -59,7 +56,7 @@ def create_moves_table(table_id: str):
         bigquery.SchemaField("shredder_fen", "STRING", mode="NULLABLE"),
         bigquery.SchemaField("color", "STRING", mode="NULLABLE"),
     ]
-    return create_bigquery_table(schema, prod_dataset_id, table_id)
+    return create_bigquery_table(schema, table_id)
 
 
 def create_games_table(game_header_keys: set[str], table_id: str):
@@ -67,7 +64,7 @@ def create_games_table(game_header_keys: set[str], table_id: str):
     schema = [
         bigquery.SchemaField(k, "STRING", mode="NULLABLE") for k in game_header_keys
     ]
-    return create_bigquery_table(schema, staging_dataset_id, table_id)
+    return create_bigquery_table(schema, table_id)
 
 
 def bq_insert(table: bigquery.Table, data: Data):
@@ -79,7 +76,6 @@ def bq_insert(table: bigquery.Table, data: Data):
 
 def create_bigquery_table(
     schema: list[bigquery.SchemaField],
-    dataset_id: str,
     table_id: str,
 ):
     # Create the BigQuery table if it doesn't already exist
