@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from io import TextIOWrapper
 from typing import Any
 
@@ -97,6 +99,9 @@ def process_pgn(event, context):
     # make the table with these columns all as strings
     game_header_keys: set[str] = set()
     game_header_keys.add("GameId")
+    # Add the default headers from python-chess
+    for h in chess.pgn.Headers().keys():
+        game_header_keys.add(h)
     num_games = 0
     games: Data = []
     moves: Data = []
@@ -171,3 +176,6 @@ def process_pgn(event, context):
     # Delete the blob
     blob.delete()
     print("Done with", event_name)
+
+
+# process_pgn({"name": "lichess_db_threeCheck_rated_2014-08_0001.pgn"}, None)
