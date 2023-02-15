@@ -65,6 +65,13 @@ def create_games_table(game_header_keys: set[str], table_id: str):
     return create_bigquery_table(schema, table_id)
 
 
+def bq_insert(table: bigquery.Table, data: Data):
+    """Inserts data into BigQuery or raises an exception"""
+    errors = bigquery_client.insert_rows(table, data)
+    if errors:
+        raise Exception(errors)
+
+
 def create_bigquery_table(
     schema: list[bigquery.SchemaField],
     table_id: str,
@@ -120,11 +127,11 @@ def process_pgn(event, context):
             num_games += 1
             if num_games % 50 == 0:
                 print(f"Inserting moves after game {num_games}")
-                bigquery_client.insert_rows(moves_table, moves)
+                bq_insert(moves_table, moves)
                 moves = []
             if num_games % 100 == 0:
                 print(f"Inserting games after game {num_games}")
-                bigquery_client.insert_rows(games_table, games)
+                bq_insert(games_table, games)
                 games = []
             game_dict = {}
             for h in game.headers:
@@ -154,8 +161,8 @@ def process_pgn(event, context):
     print("len(moves)", len(moves))
 
     # Insert the remaining rows
-    bigquery_client.insert_rows(moves_table, moves)
-    bigquery_client.insert_rows(games_table, games)
+    bq_insert(moves_table, moves)
+    bq_insert(games_table, games)
 
     # Delete the blob
     blob.delete()

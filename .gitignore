@@ -8,3 +8,4 @@ commands.txt
 *.pgn
 *.schema
 nohup.out
+.DS_Store
