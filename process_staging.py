@@ -19,6 +19,9 @@ class Column:
 
 def staging_table_name_to_prod_table_name(staging_table_name: str) -> str:
     # 'games_threeCheck_2014-09_0007' -> 'games_threeCheck_2014-09'
+    # 'moves_threeCheck_2014-09` -> 'moves_threeCheck_2014-09`
+    if staging_table_name.startswith("moves"):
+        return staging_table_name
     return "_".join(staging_table_name.split("_")[:-1])
 
 
@@ -39,6 +42,27 @@ def process_variant_month(columns: list[Column]):
     print(staging_games_table_names)
     print(staging_moves_table_names)
     print(game_column_names)
+
+    if staging_moves_table_names:
+        table_list = list(staging_moves_table_names)
+        # Should only be one table
+        assert len(table_list) == 1
+        table = table_list[0]
+        query = f"""
+            CREATE TABLE `{prod_dataset_id}.{staging_table_name_to_prod_table_name(table)}` AS
+            SELECT * EXCEPT (row_number)
+            FROM (
+            Select *, ROW_NUMBER() OVER (PARTITION BY game_id, Ply) AS row_number
+            FROM `{staging_dataset_id}.{table}`
+            )
+            WHERE row_number = 1
+            """
+        print(query)
+        job = bigquery_client.query(query)
+        job.result()
+
+        print(f"Deleting {table}")
+        bigquery_client.delete_table(f"{staging_dataset_id}.{table}", not_found_ok=True)
 
     if staging_games_table_names:
         table_list = list(staging_games_table_names)
@@ -83,10 +107,6 @@ def process_variant_month(columns: list[Column]):
             bigquery_client.delete_table(
                 f"{staging_dataset_id}.{table_name}", not_found_ok=True
             )
-
-    if staging_moves_table_names:
-        # TODO
-        pass
 
 
 # Get columns from staging
