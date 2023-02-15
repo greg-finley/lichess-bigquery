@@ -32,7 +32,7 @@ def process_variant_month(columns: list[Column]):
             staging_games_table_names.add(column.table_name)
             game_column_names.add(column.column_name)
         elif column.table_name.startswith("moves"):
-            staging_games_table_names.add(column.table_name)
+            staging_moves_table_names.add(column.table_name)
         else:
             raise ValueError(f"Unexpected table name: {column.table_name}")
 
@@ -101,7 +101,9 @@ columns = [Column(**row) for row in information_schema_columns]
 # Segment the columns together by game/moves, variant and month. i.e lichessstaging.games_threeCheck_2014-08_0017 goes with other lichessstaging.games_threeCheck_2014
 variant_months = {}
 for column in columns:
-    _, variant, month, _ = column.table_name.split("_")
+    table_name_split = column.table_name.split("_")
+    variant = table_name_split[1]
+    month = table_name_split[2]
     variant_month = f"{variant}_{month}"
     if variant_month not in variant_months:
         variant_months[variant_month] = []
