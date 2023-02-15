@@ -1,4 +1,4 @@
-import datetime
+from io import TextIOWrapper
 from typing import Any
 
 import chess.pgn
@@ -40,7 +40,7 @@ def clean_eval(eval: PovScore | None):
             return None
 
 
-def load_moves(moves: Data, table_id: str):
+def create_moves_table(table_id: str):
     # Create the BigQuery schema
     schema = [
         bigquery.SchemaField("game_id", "STRING", mode="NULLABLE"),
@@ -54,36 +54,26 @@ def load_moves(moves: Data, table_id: str):
         bigquery.SchemaField("shredder_fen", "STRING", mode="NULLABLE"),
         bigquery.SchemaField("color", "STRING", mode="NULLABLE"),
     ]
-    load_to_bigquery(moves, schema, table_id, "moves")
+    return create_bigquery_table(schema, table_id)
 
 
-def load_games(games: Data, table_id: str):
-    games_keys: set[str] = set()
-    for game in games:
-        for k in game:
-            games_keys.add(k)
-
+def create_games_table(game_header_keys: set[str], table_id: str):
     # Create the BigQuery schema
-    schema = [bigquery.SchemaField(k, "STRING", mode="NULLABLE") for k in games_keys]
-    load_to_bigquery(games, schema, table_id, "games")
+    schema = [
+        bigquery.SchemaField(k, "STRING", mode="NULLABLE") for k in game_header_keys
+    ]
+    return create_bigquery_table(schema, table_id)
 
 
-def load_to_bigquery(
-    items: Data,
+def create_bigquery_table(
     schema: list[bigquery.SchemaField],
     table_id: str,
-    name: str,
 ):
     # Create the BigQuery table if it doesn't already exist
     table_ref = bigquery_client.dataset(dataset_id).table(table_id)
     table = bigquery.Table(table_ref, schema=schema)
-    table = bigquery_client.create_table(table, exists_ok=True)
-
-    # Load the moves into BigQuery
-    errors = bigquery_client.insert_rows_json(table, items)
-    if errors:
-        print(errors)
-        raise Exception(f"Failed to load {name} to BigQuery")
+    print(f"Creating table {table_id}")
+    return bigquery_client.create_table(table)
 
 
 def process_pgn(event, context):
@@ -104,25 +94,41 @@ def process_pgn(event, context):
     games: Data = []
     moves: Data = []
 
+    # Do one quick pass through the pgn to get the header keys.
+    # Needed to create BigQuery table with the right schema
     with blob.open("rt") as pgn:
+        assert isinstance(pgn, TextIOWrapper)
+        for line in pgn:
+            if line.startswith("["):
+                key = line.split(" ")[0].strip("[")
+                game_header_keys.add(key)
+
+    bq_name_suffix = f"{variant}_{year_month}_{file_suffix}"
+
+    moves_table = create_moves_table(table_id=f"moves_{bq_name_suffix}")
+    games_table = create_games_table(
+        game_header_keys, table_id=f"games_{bq_name_suffix}"
+    )
+
+    with blob.open("rt") as pgn:
+        assert isinstance(pgn, TextIOWrapper)
         while True:
-            game = chess.pgn.read_game(pgn)  # type: ignore
+            game = chess.pgn.read_game(pgn)
             if not game:
                 break
 
             num_games += 1
-            if num_games % 500 == 0:
-                print(
-                    "Processing",
-                    datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    variant,
-                    year_month,
-                    num_games,
-                )
+            if num_games % 50 == 0:
+                print(f"Inserting moves after game {num_games}")
+                bigquery_client.insert_rows(moves_table, moves)
+                moves = []
+            if num_games % 100 == 0:
+                print(f"Inserting games after game {num_games}")
+                bigquery_client.insert_rows(games_table, games)
+                games = []
             game_dict = {}
             for h in game.headers:
                 game_dict[h] = game.headers[h]
-                game_header_keys.add(h)
             game_dict["GameId"] = game_dict["Site"].split("/")[-1]
             games.append(game_dict)
             for node in game.mainline():
@@ -147,10 +153,9 @@ def process_pgn(event, context):
     print("len(games)", len(games))
     print("len(moves)", len(moves))
 
-    bq_name_suffix = f"{variant}_{year_month}_{file_suffix}"
-
-    load_moves(moves, table_id=f"moves_{bq_name_suffix}")
-    load_games(games, table_id=f"games_{bq_name_suffix}")
+    # Insert the remaining rows
+    bigquery_client.insert_rows(moves_table, moves)
+    bigquery_client.insert_rows(games_table, games)
 
     # Delete the blob
     blob.delete()
