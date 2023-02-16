@@ -18,11 +18,11 @@ class Column:
 
 
 def staging_table_name_to_prod_table_name(staging_table_name: str) -> str:
-    # 'games_threeCheck_2014-09_0007' -> 'games_threeCheck_2014-09'
-    # 'moves_threeCheck_2014-09` -> 'moves_threeCheck_2014-09`
+    # 'games_threeCheck_2014-09_0007' -> 'games_threeCheck_2014_09'
+    # 'moves_threeCheck_2014-09` -> 'moves_threeCheck_2014_09`
     if staging_table_name.startswith("moves"):
-        return staging_table_name
-    return "_".join(staging_table_name.split("_")[:-1])
+        return staging_table_name.replace("-", "_")
+    return "_".join(staging_table_name.split("_")[:-1]).replace("-", "_")
 
 
 def process_variant_month(columns: list[Column]):
