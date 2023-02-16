@@ -2,6 +2,10 @@ import os
 
 from google.cloud import storage
 
+variant = "antichess"
+year_month_start_inclusive = "2016-04"
+year_month_end_inclusive = "2023-01"
+
 storage_client = storage.Client()
 bucket = storage_client.bucket("lichess-bigquery-pgn")
 
@@ -56,24 +60,19 @@ def split_pgn(variant: str, year_month: str):
         os_run(f"rm {file_name}")
 
 
-variants = ["racingKings"]
-year_month_start_inclusive = "2022-04"
-year_month_end_inclusive = "2023-01"
-
-for variant in variants:
-    for year_month in [
-        f"{year}-{month:02d}"
-        for year in range(
-            int(year_month_start_inclusive.split("-")[0]),
-            int(year_month_end_inclusive.split("-")[0]) + 1,
-        )
-        for month in range(1, 13)
-    ]:
-        if (
-            year_month >= year_month_start_inclusive
-            and year_month <= year_month_end_inclusive
-        ):
-            print(f"Splitting {variant} {year_month}")
-            split_pgn(variant, year_month)
+for year_month in [
+    f"{year}-{month:02d}"
+    for year in range(
+        int(year_month_start_inclusive.split("-")[0]),
+        int(year_month_end_inclusive.split("-")[0]) + 1,
+    )
+    for month in range(1, 13)
+]:
+    if (
+        year_month >= year_month_start_inclusive
+        and year_month <= year_month_end_inclusive
+    ):
+        print(f"Splitting {variant} {year_month}")
+        split_pgn(variant, year_month)
 
 print("Done")
