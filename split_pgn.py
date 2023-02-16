@@ -1,6 +1,6 @@
 import os
 
-year_month = "2014-11"
+year_month = "2015-01"
 variant = "threeCheck"
 
 

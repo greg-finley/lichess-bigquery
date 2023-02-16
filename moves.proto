@@ -1,0 +1,14 @@
+syntax = "proto2";
+
+message Move {
+    optional string game_id = 1;
+    optional int32 ply = 2;
+    optional int32 move = 3;
+    optional string san = 4;
+    optional string uci = 5;
+    optional float clock = 6;
+    optional string eval = 7;
+    optional string fen = 8;
+    optional string shredder_fen = 9;
+    optional string color = 10;
+}
