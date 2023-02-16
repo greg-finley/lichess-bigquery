@@ -1,6 +1,6 @@
 import os
 
-year_month = "2015-01"
+year_month = "2015-02"
 variant = "threeCheck"
 
 
@@ -42,5 +42,7 @@ with open(f"lichess_db_{variant}_rated_{year_month}.pgn") as g:
 
 if num_games % games_per_file != 0:
     current_file.close()
+
+os_run(f"rm lichess_db_{variant}_rated_{year_month}.pgn")
 
 print(f"Total number of games: {num_games}")
