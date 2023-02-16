@@ -1,7 +1,12 @@
 import os
 
-year_month = "2015-02"
-variant = "threeCheck"
+from google.cloud import storage
+
+year_month = "2022-04"
+variant = "racingKings"
+
+storage_client = storage.Client()
+bucket = storage_client.bucket("lichess-bigquery-pgn")
 
 
 def os_run(command: str):
@@ -44,5 +49,11 @@ if num_games % games_per_file != 0:
     current_file.close()
 
 os_run(f"rm lichess_db_{variant}_rated_{year_month}.pgn")
+
+for i in range(1, current_file_index + 1):
+    file_name = f"lichess_db_{variant}_rated_{year_month}_{i:04d}.pgn"
+    blob = bucket.blob(file_name)
+    blob.upload_from_filename(file_name)
+    os_run(f"rm {file_name}")
 
 print(f"Total number of games: {num_games}")
