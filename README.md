@@ -23,6 +23,9 @@ This library exposes the [Lichess database](https://database.lichess.org/) as pu
 (TO COME)
 
 - Has someone put a knight on all four corners of the board at some point in a game and still won?
+- Get checkmated despite having three queens
+- Highest move number to achieve a unique FEN
+- Player involved in most unique FENs
 - Reproduce some of the analysis from Lichess Game Insights
 
 ## Setting up a VM to run this script
