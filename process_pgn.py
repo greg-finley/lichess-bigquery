@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from io import TextIOWrapper
 from typing import Any
 
@@ -7,7 +8,11 @@ import chess.pgn
 from chess.engine import Cp, Mate, PovScore
 from google.cloud import bigquery, storage
 
-"""A cloud function to process a PGN file and load it to BigQuery staging area"""
+"""
+A cloud function to process a PGN file and load it to BigQuery staging area.
+
+This file is ok to run locally but it will hit a different cloud bucket and not delete the file.
+"""
 
 Data = list[dict[str, Any]]
 dataset_id = "lichessstaging"
@@ -86,9 +91,8 @@ def create_bigquery_table(
 
 
 def process_pgn(event, context):
-    bucket = storage_client.bucket("lichess-bigquery-pgn")
+    is_local = event.get("isLocal", False)
     event_name = event["name"]
-    blob = bucket.blob(event_name)
 
     # event["name"] = "lichess_db_standard_rated_2023-01_0001.pgn"
     variant = event_name.split("_")[2]
@@ -105,6 +109,12 @@ def process_pgn(event, context):
     num_games = 0
     games: Data = []
     moves: Data = []
+    bq_name = f"{variant}_{year_month}"
+    bucket_name = (
+        "lichess-bigquery-pgn" if not is_local else "lichess-bigquery-pgn-local"
+    )
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(event_name)
 
     # Do one quick pass through the pgn to get the header keys.
     # Needed to create BigQuery table with the right schema
@@ -114,8 +124,6 @@ def process_pgn(event, context):
             if line.startswith("["):
                 key = line.split(" ")[0].strip("[")
                 game_header_keys.add(key)
-
-    bq_name = f"{variant}_{year_month}"
 
     moves_table = create_moves_table(table_id=f"moves_{bq_name}")
     games_table = create_games_table(
@@ -174,8 +182,13 @@ def process_pgn(event, context):
     bq_insert(games_table, games)
 
     # Delete the blob
-    blob.delete()
+    if not is_local:
+        blob.delete()
     print("Done with", event_name)
 
 
-# process_pgn({"name": "lichess_db_threeCheck_rated_2014-08_0001.pgn"}, None)
+# If we are in the cloud function (not running locally), just define the function but don't call it
+if not os.environ.get("FUNCTION_TARGET") and not os.environ.get("FUNCTION_NAME"):
+    process_pgn(
+        {"name": "lichess_db_threeCheck_rated_2014-11_0001.pgn", "isLocal": True}, None
+    )
