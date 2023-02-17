@@ -41,69 +41,58 @@ def process_file(variant: str, year_month: str):
     game_header_keys: set[str] = set()
     game_header_keys.add("GameId")
 
-    with open(games_json_filename, "w") as games_json_file:
-        with open(moves_csv_filename, "w") as moves_csv_file:
-            csv_writer = csv.writer(moves_csv_file, delimiter=",")
-            with open(pgn_filename) as pgn_file:
-                num_games = 0
-                while True:
-                    game = chess.pgn.read_game(pgn_file)
-                    if not game:
-                        break
+    with open(pgn_filename) as pgn_file:
+        num_games = 0
+        while True:
+            game = chess.pgn.read_game(pgn_file)
+            if not game:
+                break
 
-                    num_games += 1
-                    if num_games % 500 == 0:
-                        print(
-                            "Processing",
-                            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                            variant,
-                            year_month,
-                            num_games,
-                        )
-                    game_dict = {}
-                    for h in game.headers:
-                        game_dict[h] = game.headers[h]
-                        game_header_keys.add(h)
-                    game_dict["GameId"] = game_dict["Site"].split("/")[-1]
-                    games_json_file.write(json.dumps(game_dict) + "\n")
-                    for node in game.mainline():
-                        ply = node.ply()
-                        board = node.board()
+            num_games += 1
+            if num_games % 500 == 0:
+                print(
+                    "Processing",
+                    datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    variant,
+                    year_month,
+                    num_games,
+                )
+            game_dict = {}
+            for h in game.headers:
+                game_dict[h] = game.headers[h]
+                game_header_keys.add(h)
+            game_dict["GameId"] = game_dict["Site"].split("/")[-1]
+            for node in game.mainline():
+                ply = node.ply()
+                board = node.board()
 
-                        eval = node.eval()
-                        if eval is None:
-                            clean_eval = None
+                eval = node.eval()
+                if eval is None:
+                    clean_eval = None
+                else:
+                    eval_white = eval.white()
+                    if isinstance(eval_white, Cp):
+                        clean_eval = f"{eval_white.cp / 100.0:.2f}"  # type: ignore
+                    elif isinstance(eval_white, Mate):
+                        mate_moves = eval_white.mate()
+                        if mate_moves > 0:
+                            clean_eval = f"#{mate_moves}"
                         else:
-                            eval_white = eval.white()
-                            if isinstance(eval_white, Cp):
-                                clean_eval = f"{eval_white.cp / 100.0:.2f}"  # type: ignore
-                            elif isinstance(eval_white, Mate):
-                                mate_moves = eval_white.mate()
-                                if mate_moves > 0:
-                                    clean_eval = f"#{mate_moves}"
-                                else:
-                                    clean_eval = f"-#{-mate_moves}"
-                            else:
-                                clean_eval = None
-                        csv_writer.writerow(
-                            [
-                                game_dict["GameId"],
-                                ply,
-                                ply_to_move(ply),
-                                ply_to_color(ply),
-                                node.san(),
-                                node.uci(),
-                                node.clock(),
-                                clean_eval,
-                                board.fen(),
-                                board.shredder_fen(),
-                            ]
-                        )
-
-    with open(games_schema_filename, "w") as games_schema_file:
-        games_schema_file.write(
-            json.dumps([{"name": k, "type": "STRING"} for k in game_header_keys])
-        )
+                            clean_eval = f"-#{-mate_moves}"
+                    else:
+                        clean_eval = None
+                my_list = [
+                    game_dict["GameId"],
+                    ply,
+                    ply_to_move(ply),
+                    ply_to_color(ply),
+                    node.san(),
+                    node.uci(),
+                    node.clock(),
+                    clean_eval,
+                    board.fen(),
+                    board.shredder_fen(),
+                ]
 
     print(
         "Done",

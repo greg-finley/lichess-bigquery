@@ -17,7 +17,8 @@ import cats.data.Validated
             case Validated.Invalid(errors) =>
               println(s"Failed to parse PGN: ${errors.toString()}")
             case Validated.Valid(parsedPgn) =>
-              println(parsedPgn.sans)
+              parsedPgn.sans.value.foreach(x => println(x.metas))
+              // println(parsedPgn.sans)
           // println(parsedPgn)
           lines = new ListBuffer[String]()
         }
