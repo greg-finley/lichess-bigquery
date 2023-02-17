@@ -1,11 +1,14 @@
-import chess.format.pgn.{Parser, ParsedPgn, PgnStr}
+import chess.format.pgn.{Parser, ParsedPgn, PgnStr, Tag}
 import scala.collection.mutable.ListBuffer
 import cats.data.Validated
+import scala.util.control.Breaks._
+
 
 @main def parsePgn: Unit = 
   val source = scala.io.Source.fromFile("lichess_db_racingKings_rated_2023-01.pgn")
   val lines = new ListBuffer[String]()
   var count = 0
+  breakable {
   for (line <- source.getLines()) {
     lines += line
     if (line.startsWith("1.")) {
@@ -20,8 +23,11 @@ import cats.data.Validated
           // parsedPgn.sans.value.foreach(x => println(x.metas))
           parsedPgn.sans.value.foreach(x => println(x.metas))
           println(parsedPgn.tags)
+          println(parsedPgn.initialPosition)
         })
       lines.clear()
+      break
     }
-  }
+  }}
   println(s"Found $count games")
+  println(Tag.tagTypes)
