@@ -10,3 +10,5 @@ commands.txt
 nohup.out
 .DS_Store
 __pycache__
+project/
+target/
