@@ -3,7 +3,6 @@ import scala.collection.mutable.ListBuffer
 import cats.data.Validated
 
 
-
 @main def parsePgn: Unit = 
       val source = scala.io.Source.fromFile("lichess_db_racingKings_rated_2023-01.pgn")
       for (line <- source.getLines()) {
@@ -16,9 +15,12 @@ import cats.data.Validated
           parsedPgn match
             case Validated.Invalid(errors) =>
               println(s"Failed to parse PGN: ${errors.toString()}")
+              // halt the program
+              sys.exit(1)
             case Validated.Valid(parsedPgn) =>
-              parsedPgn.sans.value.foreach(x => println(x.metas))
-              // println(parsedPgn.sans)
+              // parsedPgn.sans.value.foreach(x => println(x.metas))
+              println(parsedPgn.sans)
+              println(parsedPgn.tags)
           // println(parsedPgn)
           lines = new ListBuffer[String]()
         }
