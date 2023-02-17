@@ -13,15 +13,15 @@ import cats.data.Validated
       count += 1
       val pgn = PgnStr(lines.mkString("\n"))
       val parsedPgn = Parser.full(pgn)
-      parsedPgn match
-        case Validated.Invalid(errors) =>
+      parsedPgn.fold(errors => {
           println(s"Failed to parse PGN: ${errors.toString()}")
           // halt the program
-          sys.exit(1)
-        case Validated.Valid(parsedPgn) =>
+          sys.exit(1)},
+        parsedPgn => {
           // parsedPgn.sans.value.foreach(x => println(x.metas))
           parsedPgn.sans.value.foreach(x => println(x.metas))
           println(parsedPgn.tags)
+        })
       lines.clear()
     }
   }
