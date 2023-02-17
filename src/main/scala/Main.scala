@@ -12,8 +12,7 @@ import cats.data.Validated
       //println("Found a game")
       count += 1
       val pgn = PgnStr(lines.mkString("\n"))
-      val parsedPgn = Parser.full(pgn)
-      parsedPgn.fold(errors => {
+      Parser.full(pgn).fold(errors => {
           println(s"Failed to parse PGN: ${errors.toString()}")
           // halt the program
           sys.exit(1)},
