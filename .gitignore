@@ -12,3 +12,5 @@ nohup.out
 __pycache__
 project/
 target/
+.bsp/
+.idea/

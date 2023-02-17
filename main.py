@@ -31,14 +31,6 @@ def process_file(variant: str, year_month: str):
         year_month,
     )
 
-    os_run(
-        f"curl https://database.lichess.org/{variant}/lichess_db_{variant}_rated_{year_month}.pgn.zst --output lichess_db_{variant}_rated_{year_month}.pgn.zst"
-    )
-
-    os_run(f"pzstd -d lichess_db_{variant}_rated_{year_month}.pgn.zst")
-
-    os_run(f"rm lichess_db_{variant}_rated_{year_month}.pgn.zst")
-
     pgn_filename = f"lichess_db_{variant}_rated_{year_month}.pgn"
     games_json_filename = f"games_{variant}_{year_month}.json"
     moves_csv_filename = f"moves_{variant}_{year_month}.csv"
@@ -113,19 +105,6 @@ def process_file(variant: str, year_month: str):
             json.dumps([{"name": k, "type": "STRING"} for k in game_header_keys])
         )
 
-    # This will append if the table already exists
-    # The moves schema is fixed, so we load as a CSV (highest BQ size limit)
-    os_run(
-        f"bq load lichess.moves_{variant}_{year_month.replace('-', '_')} {moves_csv_filename} game_id:string,ply:integer,move:integer,color:string,san:string,uci:string,clock:float64,eval:string,fen:string,shredder_fen:string"
-    )
-    # Each game could have a variety of keys, and it could change over time. Load as JSON so the eventual table gets all possible keys
-    os_run(
-        f"bq load --source_format=NEWLINE_DELIMITED_JSON lichess.games_{variant}_{year_month.replace('-', '_')} {games_json_filename} {games_schema_filename}"
-    )
-
-    os_run(
-        f"rm {pgn_filename} {moves_csv_filename} {games_json_filename} {games_schema_filename}"
-    )
     print(
         "Done",
         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -135,10 +114,11 @@ def process_file(variant: str, year_month: str):
 
 
 if __name__ == "__main__":
-    for year in range(2021, 2024):
-        for month in range(1, 13):
-            if year == 2021 and month < 2:
-                continue
-            if year == 2023 and month == 2:
-                break
-            process_file("racingKings", f"{year}-{month:02d}")
+    # for year in range(2021, 2024):
+    #     for month in range(1, 13):
+    #         if year == 2021 and month < 2:
+    #             continue
+    #         if year == 2023 and month == 2:
+    #             break
+    #         process_file("racingKings", f"{year}-{month:02d}")
+    process_file("racingKings", "2023-01")
