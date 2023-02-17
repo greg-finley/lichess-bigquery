@@ -20,6 +20,6 @@ import cats.data.Validated
           // parsedPgn.sans.value.foreach(x => println(x.metas))
           println(parsedPgn.sans)
           println(parsedPgn.tags)
-      lines = new ListBuffer[String]()
+      lines.clear()
     }
   }
