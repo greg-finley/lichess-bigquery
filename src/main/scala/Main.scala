@@ -47,7 +47,7 @@ import scala.util.control.Breaks.*
             }
           )
         val readerOutput = Reader.full(pgn)
-        val something = readerOutput.fold(
+        readerOutput.fold(
           errors => {
             println(s"Failed to parse PGN: ${errors.toString()}")
             // halt the program
