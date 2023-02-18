@@ -1,6 +1,7 @@
 import chess.format.pgn.{ParsedPgn, Parser, PgnStr, Tag, Reader}
 import chess.format.Fen
 import chess.format.Uci
+import chess.Ply
 import chess.{Game, Pos}
 
 import scala.collection.mutable.ListBuffer
@@ -8,6 +9,7 @@ import cats.data.Validated
 import java.time.LocalDateTime
 
 import scala.util.control.Breaks.*
+import chess.Situation
 
 @main def parsePgn: Unit =
   val source =
@@ -62,19 +64,33 @@ import scala.util.control.Breaks.*
                 sys.exit(1)
               },
               replay => {
-                replay.moves.foreach(x =>
+                replay.moves.reverse.zipWithIndex.foreach((x, index) =>
                   x.fold(
                     { y =>
-                      println(
-                        Fen.write(
-                          y.situationAfter
+                      val fullMoveNumber = Ply(index).fullMoveNumber
+                      println("fullMoveNumber: " + fullMoveNumber)
+                      println(Ply(index).color)
+                      val situationAndFullMoveNumber =
+                        Situation.AndFullMoveNumber(
+                          y.situationAfter,
+                          fullMoveNumber
                         )
-                      ) // TODO: pass the move number too
+                      println(Fen.write(situationAndFullMoveNumber))
                       println(y.toUci.uci)
+                      // println(index)
                     },
                     { z =>
-                      println(Fen.write(z.situationAfter))
+                      val fullMoveNumber = Ply(index).fullMoveNumber
+                      println("fullMoveNumber: " + fullMoveNumber)
+                      println(Ply(index).color)
+                      val situationAndFullMoveNumber =
+                        Situation.AndFullMoveNumber(
+                          z.situationAfter,
+                          fullMoveNumber
+                        )
+                      println(Fen.write(situationAndFullMoveNumber))
                       println(z.toUci.uci)
+                      // println(index)
                     }
                   )
                 )
