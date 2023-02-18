@@ -30,9 +30,9 @@ import scala.util.control.Breaks.*
             },
             parsedPgn => {
               // parsedPgn.sans.value.foreach(x => println(x.metas))
-              parsedPgn.sans.value.foreach(x => println(x.metas))
-              println(parsedPgn.tags)
-              println(parsedPgn.initialPosition)
+              // parsedPgn.sans.value.foreach(x => println(x.metas))
+              // println(parsedPgn.tags)
+              // println(parsedPgn.initialPosition)
 
               // val fen2 = Fen.Epd("8/8/8/8/8/8/krbnNBRK/qrbnNBRQ w - - 0 1")
 
@@ -61,7 +61,9 @@ import scala.util.control.Breaks.*
                 sys.exit(1)
               },
               replay => {
-                replay.moves.foreach(x => println(x.toString()))
+                replay.moves.foreach(x =>
+                  x.fold(y => println(y.toUci.uci), z => println(z.toUci.uci))
+                )
               }
             )
           }
@@ -71,5 +73,5 @@ import scala.util.control.Breaks.*
       }
     }
   }
-  println(s"Found $count games")
-  println(Tag.tagTypes)
+  // println(s"Found $count games")
+  // println(Tag.tagTypes)
