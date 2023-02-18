@@ -33,26 +33,6 @@ import scala.util.control.Breaks.*
               parsedPgn.sans.value.foreach(x => println(x.metas))
               println(parsedPgn.tags)
               println(parsedPgn.initialPosition)
-              val readerOutput = Reader.full(pgn)
-              val something = readerOutput.fold(
-                errors => {
-                  println(s"Failed to parse PGN: ${errors.toString()}")
-                  // halt the program
-                  sys.exit(1)
-                },
-                result => {
-                  result.valid.fold(
-                    errors => {
-                      println(s"Failed to parse PGN: ${errors.toString()}")
-                      // halt the program
-                      sys.exit(1)
-                    },
-                    replay => {
-                      replay.moves.foreach(x => println(x.toString()))
-                    }
-                  )
-                }
-              )
 
               // val fen2 = Fen.Epd("8/8/8/8/8/8/krbnNBRK/qrbnNBRQ w - - 0 1")
 
@@ -63,10 +43,31 @@ import scala.util.control.Breaks.*
               // println(game.situation)
               // println(game.situation.board)
               // game.apply("e2e4")
-              lines.clear()
-              break
+
             }
           )
+        val readerOutput = Reader.full(pgn)
+        val something = readerOutput.fold(
+          errors => {
+            println(s"Failed to parse PGN: ${errors.toString()}")
+            // halt the program
+            sys.exit(1)
+          },
+          result => {
+            result.valid.fold(
+              errors => {
+                println(s"Failed to parse PGN: ${errors.toString()}")
+                // halt the program
+                sys.exit(1)
+              },
+              replay => {
+                replay.moves.foreach(x => println(x.toString()))
+              }
+            )
+          }
+        )
+        lines.clear()
+        break
       }
     }
   }
