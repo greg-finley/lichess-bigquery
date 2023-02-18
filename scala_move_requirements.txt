@@ -1,0 +1,7 @@
+game_id -> grab from headers
+ply -> calculate it myself
+san -> grab it myself
+uci -> Reader.result.valid.replay.moves.x.toUci.uci
+clock
+eval
+fen -> Reader.result.valid.replay.moves.x.situationAfter.board but then how to get to FEN?
