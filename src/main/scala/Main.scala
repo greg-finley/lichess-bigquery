@@ -62,7 +62,12 @@ import scala.util.control.Breaks.*
               },
               replay => {
                 replay.moves.foreach(x =>
-                  x.fold(y => println(y.toUci.uci), z => println(z.toUci.uci))
+                  x.fold(
+                    // y => println(y.toUci.uci),
+                    // z => println(z.toUci.uci)
+                    y => println(y.situationAfter.board),
+                    z => println(z.situationAfter.board)
+                  )
                 )
               }
             )
