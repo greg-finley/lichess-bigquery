@@ -5,12 +5,13 @@ import chess.{Game, Pos}
 
 import scala.collection.mutable.ListBuffer
 import cats.data.Validated
+import java.time.LocalDateTime
 
 import scala.util.control.Breaks.*
 
 @main def parsePgn: Unit =
   val source =
-    scala.io.Source.fromFile("lichess_db_racingKings_rated_2023-01.pgn")
+    scala.io.Source.fromFile("lichess_db_crazyhouse_rated_2023-01.pgn")
   val lines = new ListBuffer[String]()
   var count = 0
   breakable {
@@ -49,7 +50,7 @@ import scala.util.control.Breaks.*
         val readerOutput = Reader.full(pgn)
         readerOutput.fold(
           errors => {
-            println(s"Failed to parse PGN: ${errors.toString()}")
+            println(s"Failed to read: ${errors.toString()}")
             // halt the program
             sys.exit(1)
           },
@@ -63,17 +64,31 @@ import scala.util.control.Breaks.*
               replay => {
                 replay.moves.foreach(x =>
                   x.fold(
-                    // y => println(y.toUci.uci),
-                    // z => println(z.toUci.uci)
-                    y => println(y.situationAfter.board),
-                    z => println(z.situationAfter.board)
+                    { y =>
+                      println(
+                        Fen.write(
+                          y.situationAfter
+                        )
+                      ) // TODO: pass the move number too
+                      println(y.toUci.uci)
+                    },
+                    { z =>
+                      println(Fen.write(z.situationAfter))
+                      println(z.toUci.uci)
+                    }
                   )
                 )
+                // Translate back to FEN
+                replay.state.board
               }
             )
           }
         )
         lines.clear()
+        if (count % 500 == 0) {
+          println(LocalDateTime.now())
+          println(count)
+        }
         break
       }
     }
