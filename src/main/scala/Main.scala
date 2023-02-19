@@ -14,7 +14,7 @@ import chess.Situation
 
 // Freeze the list and ignore any future tags, so BigQuery has a consistent schema
 // Maybe if we get a new tag in the future we can edit the old schemas
-val gameTagValues: LinkedHashMap[String, String] = LinkedHashMap(
+val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
   "Event" -> null,
   "Site" -> null,
   "GameId" -> null,
@@ -54,7 +54,8 @@ val gameTagValues: LinkedHashMap[String, String] = LinkedHashMap(
   val gamesFile = new File("games.csv")
   if (gamesFile.exists()) gamesFile.delete()
   val gameWriter = new PrintWriter(new FileWriter(gamesFile, true))
-  var count = 0
+  var gameCount = 0
+  var gameTagValues = allTagValues.clone()
   breakable {
     for (line <- source.getLines()) {
       lines += line
@@ -78,41 +79,41 @@ val gameTagValues: LinkedHashMap[String, String] = LinkedHashMap(
           }
         gameWriter.println(gameTags)
 
-        println(gameTagValues)
-        println(gameTags)
-        val parsedSans = println(parseSans(line))
-        gameTagValues.clear()
-        count += 1
+        // println(gameTagValues)
+        // println(gameTags)
+        // println(parseSans(line))
+        gameTagValues = allTagValues.clone()
+        gameCount += 1
         val pgn = PgnStr(lines.mkString("\n"))
-        Parser
-          .full(pgn)
-          .fold(
-            errors => {
-              println(s"Failed to parse PGN: ${errors.toString()}")
-              // halt the program
-              sys.exit(1)
-            },
-            parsedPgn => {
-              // parsedPgn.sans.value.foreach(x => println(x.metas))
-              // parsedPgn.sans.value.foreach(x => println(x.metas))
-              // println(parsedPgn.tags)
-              // println(parsedPgn.initialPosition)
+        // Parser
+        //   .full(pgn)
+        //   .fold(
+        //     errors => {
+        //       println(s"Failed to parse PGN: ${errors.toString()}")
+        //       // halt the program
+        //       sys.exit(1)
+        //     },
+        //     parsedPgn => {
+        //       // parsedPgn.sans.value.foreach(x => println(x.metas))
+        //       // parsedPgn.sans.value.foreach(x => println(x.metas))
+        //       // println(parsedPgn.tags)
+        //       // println(parsedPgn.initialPosition)
 
-              // val fen2 = Fen.Epd("8/8/8/8/8/8/krbnNBRK/qrbnNBRQ w - - 0 1")
+        //       // val fen2 = Fen.Epd("8/8/8/8/8/8/krbnNBRK/qrbnNBRQ w - - 0 1")
 
-              // val game: Game = Game(
-              //   variantOption = Some(chess.variant.RacingKings),
-              //   fen = Some(fen2)
-              // )
-              // println(game.situation)
-              // println(game.situation.board)
-              // game.apply("e2e4")
-              // parsedPgn.tags.value.foreach(x =>
-              //   if (tagTypes.contains(x.name)) { println(x.name) }
-              // )
+        //       // val game: Game = Game(
+        //       //   variantOption = Some(chess.variant.RacingKings),
+        //       //   fen = Some(fen2)
+        //       // )
+        //       // println(game.situation)
+        //       // println(game.situation.board)
+        //       // game.apply("e2e4")
+        //       // parsedPgn.tags.value.foreach(x =>
+        //       //   if (tagTypes.contains(x.name)) { println(x.name) }
+        //       // )
 
-            }
-          )
+        //     }
+        //   )
         val readerOutput = Reader.full(pgn)
         readerOutput.fold(
           errors => {
@@ -132,28 +133,28 @@ val gameTagValues: LinkedHashMap[String, String] = LinkedHashMap(
                   x.fold(
                     { y =>
                       val fullMoveNumber = Ply(index).fullMoveNumber
-                      println("fullMoveNumber: " + fullMoveNumber)
-                      println(Ply(index).color)
+                      // println("fullMoveNumber: " + fullMoveNumber)
+                      // println(Ply(index).color)
                       val situationAndFullMoveNumber =
                         Situation.AndFullMoveNumber(
                           y.situationAfter,
                           fullMoveNumber
                         )
-                      println(Fen.write(situationAndFullMoveNumber))
-                      println(y.toUci.uci)
+                      // println(Fen.write(situationAndFullMoveNumber))
+                      // println(y.toUci.uci)
                       // println(index)
                     },
                     { z =>
                       val fullMoveNumber = Ply(index).fullMoveNumber
-                      println("fullMoveNumber: " + fullMoveNumber)
-                      println(Ply(index).color)
+                      // println("fullMoveNumber: " + fullMoveNumber)
+                      // println(Ply(index).color)
                       val situationAndFullMoveNumber =
                         Situation.AndFullMoveNumber(
                           z.situationAfter,
                           fullMoveNumber
                         )
-                      println(Fen.write(situationAndFullMoveNumber))
-                      println(z.toUci.uci)
+                      // println(Fen.write(situationAndFullMoveNumber))
+                      // println(z.toUci.uci)
                       // println(index)
                     }
                   )
@@ -163,11 +164,11 @@ val gameTagValues: LinkedHashMap[String, String] = LinkedHashMap(
           }
         )
         lines.clear()
-        if (count % 500 == 0) {
+        if (gameCount % 500 == 0) {
           println(LocalDateTime.now())
-          println(count)
+          println(gameCount)
         }
-        break
+        // break
     }
   }
 
