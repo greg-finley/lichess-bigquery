@@ -7,6 +7,7 @@ import chess.{Game, Pos}
 import scala.collection.mutable.{ListBuffer, LinkedHashMap}
 import cats.data.Validated
 import java.time.LocalDateTime
+import java.io._
 
 import scala.util.control.Breaks.*
 import chess.Situation
@@ -50,6 +51,9 @@ val gameTagValues: LinkedHashMap[String, String] = LinkedHashMap(
   val source =
     scala.io.Source.fromFile("lichess_db_crazyhouse_rated_2023-01.pgn")
   val lines: ListBuffer[String] = ListBuffer()
+  val gamesFile = new File("games.csv")
+  if (gamesFile.exists()) gamesFile.delete()
+  val gameWriter = new PrintWriter(new FileWriter(gamesFile, true))
   var count = 0
   breakable {
     for (line <- source.getLines()) {
@@ -72,6 +76,7 @@ val gameTagValues: LinkedHashMap[String, String] = LinkedHashMap(
           .foldLeft("") { (acc, value) =>
             if (acc.isEmpty) value else acc + "," + value
           }
+        gameWriter.println(gameTags)
 
         println(gameTagValues)
         println(gameTags)
@@ -165,6 +170,8 @@ val gameTagValues: LinkedHashMap[String, String] = LinkedHashMap(
         break
     }
   }
+
+  gameWriter.close()
   // println(s"Found $count games")
   // println(Tag.tagTypes)
 

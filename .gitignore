@@ -1,5 +1,6 @@
 lichess_db*
 games*.json
+games*.csv
 moves*.csv
 existing_tables.txt
 .vscode
