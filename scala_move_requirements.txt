@@ -5,3 +5,11 @@ uci -> Reader.result.valid.replay.moves.x.toUci.uci
 clock
 eval
 fen -> Reader.result.valid.replay.moves.x.situationAfter.board but then how to get to FEN?
+
+Freeze the list of Tags and make them null if missing. Also these: https://github.com/lichess-org/scalachess/blob/master/src/main/scala/format/pgn/tagModel.scala#L131-L161
+
+bq update -d --storage_billing_model=PHYSICAL greg-finley:lichess https://cloud.google.com/bigquery/docs/updating-datasets#update_storage_billing_models
+
+Benchmark Scala script on different types of machines
+
+Check out how other people parsed this data
