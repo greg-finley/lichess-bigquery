@@ -22,6 +22,7 @@ import chess.Situation
       lines += line
       if (line.startsWith("1.")) {
         // println("Found a game")
+        println(parseGame(line))
         count += 1
         val pgn = PgnStr(lines.mkString("\n"))
         Parser
@@ -98,8 +99,6 @@ import chess.Situation
                     }
                   )
                 )
-                // Translate back to FEN
-                replay.state.board
               }
             )
           }
@@ -148,3 +147,62 @@ val tagTypes = List(
   Termination,
   Annotator
 )
+
+val SCORES = List("1-0\n", "0-1\n", "1/2-1/2\n")
+
+type Move = (String, String, String)
+
+def parseGame(game_str: String): List[Move] = {
+  var moves: List[Move] = List()
+  val game_split = game_str.split(" ")
+  if (!game_str.contains("...")) {
+    // Assume it's an old-style game, like
+    // 1. Kh3 Rb4 2. Rg4 Be4 3. Kh4 0-1
+    for (i <- 0 until game_split.length) {
+      val part = game_split(i)
+      if (part.contains(".")) {
+        val move = game_split(i + 1)
+        if (SCORES.contains(move)) {
+          break()
+        }
+        var black_move = ""
+        // Try to add black's move. Might not be present at the end of the game
+        if (i + 2 < game_split.length) {
+          black_move = game_split(i + 2)
+        }
+        if (!SCORES.contains(black_move)) {
+          moves = moves :+ (move, "", "")
+          moves = moves :+ (black_move, "", "")
+        } else {
+          moves = moves :+ (move, "", "")
+        }
+      }
+    }
+  } else {
+    // Otherwise, assume it's a new-style game, like
+    // 1. e4 { [%eval 0.17] [%clk 0:00:30] } 1... c5 { [%eval 0.19] [%clk 0:00:30] }
+    for (i <- 0 until game_split.length) {
+      val part = game_split(i)
+      if (part.contains(".") && !part.endsWith("]")) {
+        val move = game_split(i + 1)
+        var clk = ""
+        var eval = ""
+        try {
+          var j = i + 2
+          while (!game_split(j).endsWith("}")) {
+            if (game_split(j).startsWith("[%clk")) {
+              clk = game_split(j + 1).stripSuffix("]")
+            } else if (game_split(j).startsWith("[%eval")) {
+              eval = game_split(j + 1).stripSuffix("]")
+            }
+            j += 1
+          }
+        } catch {
+          case e: ArrayIndexOutOfBoundsException =>
+        }
+        moves = moves :+ (move, clk, eval)
+      }
+    }
+  }
+  return moves
+}
