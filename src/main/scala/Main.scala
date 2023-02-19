@@ -1,23 +1,56 @@
 import chess.format.pgn.{ParsedPgn, Parser, PgnStr, Reader}
-import chess.format.pgn.Tag.*
 import chess.format.Fen
 import chess.format.Uci
 import chess.Ply
 import chess.{Game, Pos}
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ListBuffer, LinkedHashMap}
 import cats.data.Validated
 import java.time.LocalDateTime
 
 import scala.util.control.Breaks.*
 import chess.Situation
 
+// Freeze the list and ignore any future tags, so BigQuery has a consistent schema
+// Maybe if we get a new tag in the future we can edit the old schemas
+val gameTagValues: LinkedHashMap[String, String] = LinkedHashMap(
+  "Event" -> null,
+  "Site" -> null,
+  "GameId" -> null,
+  "Date" -> null,
+  "UTCDate" -> null,
+  "UTCTime" -> null,
+  "Round" -> null,
+  "Board" -> null,
+  "White" -> null,
+  "Black" -> null,
+  "TimeControl" -> null,
+  "WhiteClock" -> null,
+  "BlackClock" -> null,
+  "WhiteElo" -> null,
+  "BlackElo" -> null,
+  "WhiteRatingDiff" -> null,
+  "BlackRatingDiff" -> null,
+  "WhiteTitle" -> null,
+  "BlackTitle" -> null,
+  "WhiteTeam" -> null,
+  "BlackTeam" -> null,
+  "WhiteFideId" -> null,
+  "BlackFideId" -> null,
+  "Result" -> null,
+  "FEN" -> null,
+  "Variant" -> null,
+  "ECO" -> null,
+  "Opening" -> null,
+  "Termination" -> null,
+  "Annotator" -> null
+)
+
 @main def parsePgn: Unit =
   val source =
     scala.io.Source.fromFile("lichess_db_crazyhouse_rated_2023-01.pgn")
   val lines: ListBuffer[String] = ListBuffer()
   var count = 0
-  var gameHeaders = scala.collection.mutable.Map[String, String]()
   breakable {
     for (line <- source.getLines()) {
       lines += line
@@ -27,13 +60,23 @@ import chess.Situation
         // tagValue = https://lichess.org/CyEpEADM
         val tag = line.split(" ")
         val tagName = tag(0).replace("[", "")
-        val tagValue = tag(1).replace("]", "").replaceAll("\"", "")
-        gameHeaders(tagName) = tagValue
+        if (gameTagValues.contains(tagName)) then
+          gameTagValues(tagName) = tag(1).replace("]", "").replaceAll("\"", "")
       else if (line.startsWith("1.")) then
         // println("Found a game")
-        println(gameHeaders)
+        gameTagValues("GameId") = gameTagValues("Site").split("/")(3)
+        val gameTags = gameTagValues.toSeq
+          .map { case (_, value) =>
+            Option(value).getOrElse("")
+          }
+          .foldLeft("") { (acc, value) =>
+            if (acc.isEmpty) value else acc + "," + value
+          }
+
+        println(gameTagValues)
+        println(gameTags)
         val parsedSans = println(parseSans(line))
-        gameHeaders.clear()
+        gameTagValues.clear()
         count += 1
         val pgn = PgnStr(lines.mkString("\n"))
         Parser
@@ -59,9 +102,9 @@ import chess.Situation
               // println(game.situation)
               // println(game.situation.board)
               // game.apply("e2e4")
-              parsedPgn.tags.value.foreach(x =>
-                if (tagTypes.contains(x.name)) { println(x.name) }
-              )
+              // parsedPgn.tags.value.foreach(x =>
+              //   if (tagTypes.contains(x.name)) { println(x.name) }
+              // )
 
             }
           )
@@ -124,40 +167,6 @@ import chess.Situation
   }
   // println(s"Found $count games")
   // println(Tag.tagTypes)
-
-// Freeze the list and ignore any future tags, so BigQuery has a consistent schema
-// Maybe if we get a new tag in the future we can edit the old schemas
-val tagTypes: List[String] = List(
-  "Event",
-  "Site",
-  "Date",
-  "UTCDate",
-  "UTCTime",
-  "Round",
-  "Board",
-  "White",
-  "Black",
-  "TimeControl",
-  "WhiteClock",
-  "BlackClock",
-  "WhiteElo",
-  "BlackElo",
-  "WhiteRatingDiff",
-  "BlackRatingDiff",
-  "WhiteTitle",
-  "BlackTitle",
-  "WhiteTeam",
-  "BlackTeam",
-  "WhiteFideId",
-  "BlackFideId",
-  "Result",
-  "FEN",
-  "Variant",
-  "ECO",
-  "Opening",
-  "Termination",
-  "Annotator"
-)
 
 val SCORES = List("1-0\n", "0-1\n", "1/2-1/2\n")
 
