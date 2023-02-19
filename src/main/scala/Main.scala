@@ -64,7 +64,7 @@ import chess.Situation
                 sys.exit(1)
               },
               replay => {
-                replay.moves.reverse.zipWithIndex.foreach((x, index) =>
+                replay.chronoMoves.zipWithIndex.foreach((x, index) =>
                   x.fold(
                     { y =>
                       val fullMoveNumber = Ply(index).fullMoveNumber
