@@ -15,14 +15,25 @@ import chess.Situation
 @main def parsePgn: Unit =
   val source =
     scala.io.Source.fromFile("lichess_db_crazyhouse_rated_2023-01.pgn")
-  val lines = new ListBuffer[String]()
+  val lines: ListBuffer[String] = ListBuffer()
   var count = 0
+  var gameHeaders = scala.collection.mutable.Map[String, String]()
   breakable {
     for (line <- source.getLines()) {
       lines += line
-      if (line.startsWith("1.")) {
+      if (line.startsWith("[")) then
+        // [Site "https://lichess.org/CyEpEADM"]
+        // tagName = Site
+        // tagValue = https://lichess.org/CyEpEADM
+        val tag = line.split(" ")
+        val tagName = tag(0).replace("[", "")
+        val tagValue = tag(1).replace("]", "").replaceAll("\"", "")
+        gameHeaders(tagName) = tagValue
+      else if (line.startsWith("1.")) then
         // println("Found a game")
-        println(parseGame(line))
+        println(gameHeaders)
+        val parsedSans = println(parseSans(line))
+        gameHeaders.clear()
         count += 1
         val pgn = PgnStr(lines.mkString("\n"))
         Parser
@@ -109,50 +120,50 @@ import chess.Situation
           println(count)
         }
         break
-      }
     }
   }
   // println(s"Found $count games")
   // println(Tag.tagTypes)
 
-  // Freeze the list and ignore any future tags, so BigQuery has a consistent schema
-val tagTypes = List(
-  Event,
-  Site,
-  Date,
-  UTCDate,
-  UTCTime,
-  Round,
-  Board,
-  White,
-  Black,
-  TimeControl,
-  WhiteClock,
-  BlackClock,
-  WhiteElo,
-  BlackElo,
-  WhiteRatingDiff,
-  BlackRatingDiff,
-  WhiteTitle,
-  BlackTitle,
-  WhiteTeam,
-  BlackTeam,
-  WhiteFideId,
-  BlackFideId,
-  Result,
-  FEN,
-  Variant,
-  ECO,
-  Opening,
-  Termination,
-  Annotator
+// Freeze the list and ignore any future tags, so BigQuery has a consistent schema
+// Maybe if we get a new tag in the future we can edit the old schemas
+val tagTypes: List[String] = List(
+  "Event",
+  "Site",
+  "Date",
+  "UTCDate",
+  "UTCTime",
+  "Round",
+  "Board",
+  "White",
+  "Black",
+  "TimeControl",
+  "WhiteClock",
+  "BlackClock",
+  "WhiteElo",
+  "BlackElo",
+  "WhiteRatingDiff",
+  "BlackRatingDiff",
+  "WhiteTitle",
+  "BlackTitle",
+  "WhiteTeam",
+  "BlackTeam",
+  "WhiteFideId",
+  "BlackFideId",
+  "Result",
+  "FEN",
+  "Variant",
+  "ECO",
+  "Opening",
+  "Termination",
+  "Annotator"
 )
 
 val SCORES = List("1-0\n", "0-1\n", "1/2-1/2\n")
 
 type Move = (String, String, String)
 
-def parseGame(game_str: String): List[Move] = {
+def parseSans(game_str: String): List[Move] = {
   var moves: List[Move] = List()
   val game_split = game_str.split(" ")
   if (!game_str.contains("...")) {
