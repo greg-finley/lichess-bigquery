@@ -1,4 +1,5 @@
-import chess.format.pgn.{ParsedPgn, Parser, PgnStr, Tag, Reader}
+import chess.format.pgn.{ParsedPgn, Parser, PgnStr, Reader}
+import chess.format.pgn.Tag.*
 import chess.format.Fen
 import chess.format.Uci
 import chess.Ply
@@ -46,6 +47,9 @@ import chess.Situation
               // println(game.situation)
               // println(game.situation.board)
               // game.apply("e2e4")
+              parsedPgn.tags.value.foreach(x =>
+                if (tagTypes.contains(x.name)) { println(x.name) }
+              )
 
             }
           )
@@ -111,3 +115,36 @@ import chess.Situation
   }
   // println(s"Found $count games")
   // println(Tag.tagTypes)
+
+  // Freeze the list and ignore any future tags, so BigQuery has a consistent schema
+val tagTypes = List(
+  Event,
+  Site,
+  Date,
+  UTCDate,
+  UTCTime,
+  Round,
+  Board,
+  White,
+  Black,
+  TimeControl,
+  WhiteClock,
+  BlackClock,
+  WhiteElo,
+  BlackElo,
+  WhiteRatingDiff,
+  BlackRatingDiff,
+  WhiteTitle,
+  BlackTitle,
+  WhiteTeam,
+  BlackTeam,
+  WhiteFideId,
+  BlackFideId,
+  Result,
+  FEN,
+  Variant,
+  ECO,
+  Opening,
+  Termination,
+  Annotator
+)
