@@ -54,7 +54,7 @@ pzstd -d lichess_db_crazyhouse_rated_2023-01.pgn.zst
 rm lichess_db_crazyhouse_rated_2023-01.pgn.zst
 sbt run
 bq load --noreplace --location=EU --source_format=CSV lichess.moves_crazyhouse_2023_01  moves.csv move_schema.json
-bq load --noreplace --location=EU --source_format=CSV lichess.games_crazyhouse_2023_01  games.csv games_schema.json
+bq load --noreplace --location=EU --source_format=CSV lichess.games_crazyhouse_2023_01  games.csv game_schema.json
 ```
 
 `nohup python3 -u main.py &`
