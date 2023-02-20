@@ -48,7 +48,7 @@ val gameTagValues: LinkedHashMap[String, String] = LinkedHashMap(
 
 @main def parsePgn: Unit =
   val source =
-    scala.io.Source.fromFile("lichess_db_racingKings_rated_2023-01.pgn")
+    scala.io.Source.fromFile("lichess_db_racingKings_rated_2023-01_0001.pgn")
   val lines: ListBuffer[String] = ListBuffer()
   val gamesFile = new File("games.csv")
   val movesFile = new File("moves.csv")
@@ -66,7 +66,7 @@ val gameTagValues: LinkedHashMap[String, String] = LinkedHashMap(
       val tagName = tag(0).replace("[", "")
       if (gameTagValues.contains(tagName)) then
         gameTagValues(tagName) = line
-          .substring(tagName.length() + 1)
+          .substring(tagName.length() + 2)
           .replace("]", "")
           .replaceAll("\"", "")
     else if (line.startsWith("1.")) then
@@ -82,7 +82,6 @@ val gameTagValues: LinkedHashMap[String, String] = LinkedHashMap(
           }
       )
 
-      gameTagValues.foreach((x, y) => gameTagValues(x) = null)
       gameCount += 1
       val pgn = PgnStr(lines.mkString("\n"))
 
@@ -151,6 +150,7 @@ val gameTagValues: LinkedHashMap[String, String] = LinkedHashMap(
           )
         )
       lines.clear()
+      gameTagValues.foreach((x, y) => gameTagValues(x) = null)
       if (gameCount % 500 == 0) {
         println(LocalDateTime.now())
         println(gameCount)
