@@ -84,7 +84,7 @@ val gameTagValues: LinkedHashMap[String, String] = LinkedHashMap(
       val pgn = PgnStr(lines.mkString("\n"))
 
       // tuple of (ply number, uci move, fen)
-      val lichessMoveParsing = Reader
+      val lichessMoveParsing: List[(Int, String, String, String)] = Reader
         .full(pgn)
         .fold(
           errors => {
@@ -113,7 +113,8 @@ val gameTagValues: LinkedHashMap[String, String] = LinkedHashMap(
                               Ply(index).fullMoveNumber
                             )
                           )
-                          .toString()
+                          .toString(),
+                        gameTagValues("GameId")
                       )
                     },
                     { drop =>
@@ -127,7 +128,8 @@ val gameTagValues: LinkedHashMap[String, String] = LinkedHashMap(
                               Ply(index).fullMoveNumber
                             )
                           )
-                          .toString()
+                          .toString(),
+                        gameTagValues("GameId")
                       )
                     }
                   )
@@ -141,7 +143,8 @@ val gameTagValues: LinkedHashMap[String, String] = LinkedHashMap(
         .zip(lichessMoveParsing)
         .foreach((x, y) =>
           moveWriter.println(
-            (x._1, x._2, x._3, y._1, y._2, y._3).productIterator.mkString(",")
+            (x._1, x._2, x._3, y._1, y._2, y._3, y._4).productIterator
+              .mkString(",")
           )
         )
       lines.clear()
