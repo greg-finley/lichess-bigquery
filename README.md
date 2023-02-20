@@ -32,10 +32,29 @@ This library exposes the [Lichess database](https://database.lichess.org/) as pu
 
 ```
 sudo apt-get update
-sudo apt install python3-pip -y
-sudo apt-get install git zstd -y
+sudo apt-get install apt-transport-https curl gnupg -yqq
+echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" | sudo tee /etc/apt/sources.list.d/sbt.list
+echo "deb https://repo.scala-sbt.org/scalasbt/debian /" | sudo tee /etc/apt/sources.list.d/sbt_old.list
+curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | sudo -H gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/scalasbt-release.gpg --import
+sudo chmod 644 /etc/apt/trusted.gpg.d/scalasbt-release.gpg
+sudo apt-get update
+sudo apt-get install sbt wget -y
+wget https://download.oracle.com/java/19/latest/jdk-19_linux-x64_bin.deb
+sudo apt-get -qqy install ./jdk-19_linux-x64_bin.deb
+sudo update-alternatives --install /usr/bin/java java /usr/lib/jvm/jdk-19/bin/java 1919
 git clone https://github.com/greg-finley/lichess-bigquery
-cd lichess-bigquery && pip install -r requirements.txt
+git clone https://github.com/lichess-org/scalachess.git
+git clone https://github.com/ornicar/scalalib.git
+cd scalalib && sbt publishLocal && cd ..
+cd scalachess && git checkout a595cf1081132209e3b084ec94ec44fa882970d6 && sbt publishLocal && cd ..
+cd lichess-bigquery && sbt compile
+sudo apt-get install zstd -y
+curl https://database.lichess.org/crazyhouse/lichess_db_crazyhouse_rated_2023-01.pgn.zst --output lichess_db_crazyhouse_rated_2023-01.pgn.zst
+pzstd -d lichess_db_crazyhouse_rated_2023-01.pgn.zst
+rm lichess_db_crazyhouse_rated_2023-01.pgn.zst
+sbt run
+bq load --noreplace --location=EU --source_format=CSV lichess.moves_crazyhouse_2023_01  moves.csv move_schema.json
+bq load --noreplace --location=EU --source_format=CSV lichess.games_crazyhouse_2023_01  games.csv games_schema.json
 ```
 
 `nohup python3 -u main.py &`
