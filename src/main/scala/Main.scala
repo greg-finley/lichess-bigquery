@@ -3,6 +3,7 @@ import cats.Show.Shown
 import chess.{Game, Pos, Ply, Situation}
 import chess.format.{Fen, Uci}
 import chess.format.pgn.{ParsedPgn, Parser, PgnStr, Reader}
+import chess.MoveOrDrop.*
 
 import java.time.LocalDateTime
 import java.io._
