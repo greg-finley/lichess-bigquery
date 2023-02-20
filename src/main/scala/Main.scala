@@ -112,7 +112,7 @@ val gameTagValues: LinkedHashMap[String, String] = LinkedHashMap(
                           .write(
                             Situation.AndFullMoveNumber(
                               move.situationAfter,
-                              Ply(index).fullMoveNumber
+                              Ply(index + 1).fullMoveNumber
                             )
                           )
                           .toString(),
@@ -127,7 +127,7 @@ val gameTagValues: LinkedHashMap[String, String] = LinkedHashMap(
                           .write(
                             Situation.AndFullMoveNumber(
                               drop.situationAfter,
-                              Ply(index).fullMoveNumber
+                              Ply(index + 1).fullMoveNumber
                             )
                           )
                           .toString(),
