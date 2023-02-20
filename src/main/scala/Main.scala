@@ -3,6 +3,7 @@ import cats.Show.Shown
 import chess.{Game, Pos, Ply, Situation}
 import chess.format.{Fen, Uci}
 import chess.format.pgn.{ParsedPgn, Parser, PgnStr, Reader}
+import chess.MoveOrDrop.*
 
 import java.time.LocalDateTime
 import java.io._
@@ -102,40 +103,21 @@ val gameTagValues: LinkedHashMap[String, String] = LinkedHashMap(
                 sys.exit(1)
               },
               replay => {
-                replay.chronoMoves.zipWithIndex.map((x, index) =>
-                  x.fold(
-                    { move =>
-                      (
-                        index + 1,
-                        move.toUci.uci,
-                        Fen
-                          .write(
-                            Situation.AndFullMoveNumber(
-                              move.situationAfter,
-                              Ply(index + 1).fullMoveNumber
-                            )
-                          )
-                          .toString(),
-                        gameTagValues("GameId")
+                replay.chronoMoves.zipWithIndex.map((moveOrDrop, index) => {
+                  (
+                    index + 1,
+                    moveOrDrop.toUci.uci,
+                    Fen
+                      .write(
+                        Situation.AndFullMoveNumber(
+                          moveOrDrop.situationAfter,
+                          Ply(index + 1).fullMoveNumber
+                        )
                       )
-                    },
-                    { drop =>
-                      (
-                        index + 1,
-                        drop.toUci.uci,
-                        Fen
-                          .write(
-                            Situation.AndFullMoveNumber(
-                              drop.situationAfter,
-                              Ply(index + 1).fullMoveNumber
-                            )
-                          )
-                          .toString(),
-                        gameTagValues("GameId")
-                      )
-                    }
+                      .toString(),
+                    gameTagValues("GameId")
                   )
-                )
+                })
               }
             )
           }
