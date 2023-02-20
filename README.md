@@ -57,8 +57,6 @@ bq load --noreplace --location=EU --source_format=CSV lichess.moves_crazyhouse_2
 bq load --noreplace --location=EU --source_format=CSV lichess.games_crazyhouse_2023_01  games.csv game_schema.json
 ```
 
-`nohup python3 -u main.py &`
-
 ## Games without moves
 
 ```sql
@@ -70,15 +68,3 @@ on moves.game_id = g.GameId
 where moves.game_id is null
 limit 100
 ```
-
-## Poetry to requirements.txt
-
-```shell
-poetry export -f requirements.txt --output requirements.txt --without-hashes
-```
-
-## Loading plan
-
-1. VM downloads PNG from torrents, loads small PNGs to GCS
-2. Cloud functions process PNGs, load games JSON to GCS and moves CSV to BigQuery, deleting original GCS object
-3. When all JSON is there, another job gets all the unique keys and combines it all and loads to BQ
