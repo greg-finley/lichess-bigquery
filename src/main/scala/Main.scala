@@ -1,18 +1,15 @@
-import chess.format.pgn.{ParsedPgn, Parser, PgnStr, Reader}
-import chess.format.Fen
-import chess.format.Uci
-import chess.Ply
-import chess.{Game, Pos}
-
-import scala.collection.mutable.{ListBuffer, LinkedHashMap}
 import cats.data.Validated
+import cats.Show.Shown
+import chess.{Game, Pos, Ply, Situation}
+import chess.format.{Fen, Uci}
+import chess.format.pgn.{ParsedPgn, Parser, PgnStr, Reader}
+
 import java.time.LocalDateTime
 import java.io._
 
+import scala.collection.mutable.{LinkedHashMap, ListBuffer}
+
 import scala.util.control.Breaks.*
-import chess.Situation
-import chess.{Move, Drop}
-import cats.Show.Shown.mat
 
 // Freeze the list and ignore any future tags, so BigQuery has a consistent schema
 // Maybe if we get a new tag in the future we can edit the old schemas
