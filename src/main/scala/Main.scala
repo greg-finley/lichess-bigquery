@@ -48,7 +48,7 @@ val gameTagValues: LinkedHashMap[String, String] = LinkedHashMap(
 
 @main def parsePgn: Unit =
   val source =
-    scala.io.Source.fromFile("lichess_db_crazyhouse_rated_2023-01.pgn")
+    scala.io.Source.fromFile("lichess_db_racingKings_rated_2023-01.pgn")
   val lines: ListBuffer[String] = ListBuffer()
   val gamesFile = new File("games.csv")
   val movesFile = new File("moves.csv")
@@ -65,7 +65,10 @@ val gameTagValues: LinkedHashMap[String, String] = LinkedHashMap(
       val tag = line.split(" ")
       val tagName = tag(0).replace("[", "")
       if (gameTagValues.contains(tagName)) then
-        gameTagValues(tagName) = tag(1).replace("]", "").replaceAll("\"", "")
+        gameTagValues(tagName) = line
+          .substring(tagName.length() + 1)
+          .replace("]", "")
+          .replaceAll("\"", "")
     else if (line.startsWith("1.")) then
       val customMoveParsing = customParseMoves(line)
       gameTagValues("GameId") = gameTagValues("Site").split("/")(3)
