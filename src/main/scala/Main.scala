@@ -11,10 +11,12 @@ import java.io._
 
 import scala.util.control.Breaks.*
 import chess.Situation
+import chess.{Move, Drop}
+import cats.Show.Shown.mat
 
 // Freeze the list and ignore any future tags, so BigQuery has a consistent schema
 // Maybe if we get a new tag in the future we can edit the old schemas
-val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
+val gameTagValues: LinkedHashMap[String, String] = LinkedHashMap(
   "Event" -> null,
   "Site" -> null,
   "GameId" -> null,
@@ -52,70 +54,42 @@ val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
     scala.io.Source.fromFile("lichess_db_crazyhouse_rated_2023-01.pgn")
   val lines: ListBuffer[String] = ListBuffer()
   val gamesFile = new File("games.csv")
+  val movesFile = new File("moves.csv")
   if (gamesFile.exists()) gamesFile.delete()
+  if (movesFile.exists()) movesFile.delete()
   val gameWriter = new PrintWriter(new FileWriter(gamesFile, true))
+  val moveWriter = new PrintWriter(new FileWriter(movesFile, true))
   var gameCount = 0
-  var gameTagValues = allTagValues.clone()
-  breakable {
-    for (line <- source.getLines()) {
-      lines += line
-      if (line.startsWith("[")) then
-        // [Site "https://lichess.org/CyEpEADM"]
-        // tagName = Site
-        // tagValue = https://lichess.org/CyEpEADM
-        val tag = line.split(" ")
-        val tagName = tag(0).replace("[", "")
-        if (gameTagValues.contains(tagName)) then
-          gameTagValues(tagName) = tag(1).replace("]", "").replaceAll("\"", "")
-      else if (line.startsWith("1.")) then
-        // println("Found a game")
-        gameTagValues("GameId") = gameTagValues("Site").split("/")(3)
-        val gameTags = gameTagValues.toSeq
+  for (line <- source.getLines()) {
+    lines += line
+    // tuple of (pgn move, clock, eval)
+    if (line.startsWith("[")) then
+      // [Site "https://lichess.org/CyEpEADM"]
+      val tag = line.split(" ")
+      val tagName = tag(0).replace("[", "")
+      if (gameTagValues.contains(tagName)) then
+        gameTagValues(tagName) = tag(1).replace("]", "").replaceAll("\"", "")
+    else if (line.startsWith("1.")) then
+      val customMoveParsing = customParseMoves(line)
+      gameTagValues("GameId") = gameTagValues("Site").split("/")(3)
+      gameWriter.println(
+        gameTagValues.toSeq
           .map { case (_, value) =>
             Option(value).getOrElse("")
           }
           .foldLeft("") { (acc, value) =>
             if (acc.isEmpty) value else acc + "," + value
           }
-        gameWriter.println(gameTags)
+      )
 
-        // println(gameTagValues)
-        // println(gameTags)
-        // println(parseSans(line))
-        gameTagValues = allTagValues.clone()
-        gameCount += 1
-        val pgn = PgnStr(lines.mkString("\n"))
-        // Parser
-        //   .full(pgn)
-        //   .fold(
-        //     errors => {
-        //       println(s"Failed to parse PGN: ${errors.toString()}")
-        //       // halt the program
-        //       sys.exit(1)
-        //     },
-        //     parsedPgn => {
-        //       // parsedPgn.sans.value.foreach(x => println(x.metas))
-        //       // parsedPgn.sans.value.foreach(x => println(x.metas))
-        //       // println(parsedPgn.tags)
-        //       // println(parsedPgn.initialPosition)
+      gameTagValues.foreach((x, y) => gameTagValues(x) = null)
+      gameCount += 1
+      val pgn = PgnStr(lines.mkString("\n"))
 
-        //       // val fen2 = Fen.Epd("8/8/8/8/8/8/krbnNBRK/qrbnNBRQ w - - 0 1")
-
-        //       // val game: Game = Game(
-        //       //   variantOption = Some(chess.variant.RacingKings),
-        //       //   fen = Some(fen2)
-        //       // )
-        //       // println(game.situation)
-        //       // println(game.situation.board)
-        //       // game.apply("e2e4")
-        //       // parsedPgn.tags.value.foreach(x =>
-        //       //   if (tagTypes.contains(x.name)) { println(x.name) }
-        //       // )
-
-        //     }
-        //   )
-        val readerOutput = Reader.full(pgn)
-        readerOutput.fold(
+      // tuple of (ply number, uci move, fen)
+      val lichessMoveParsing = Reader
+        .full(pgn)
+        .fold(
           errors => {
             println(s"Failed to read: ${errors.toString()}")
             // halt the program
@@ -129,33 +103,35 @@ val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
                 sys.exit(1)
               },
               replay => {
-                replay.chronoMoves.zipWithIndex.foreach((x, index) =>
+                replay.chronoMoves.zipWithIndex.map((x, index) =>
                   x.fold(
-                    { y =>
-                      val fullMoveNumber = Ply(index).fullMoveNumber
-                      // println("fullMoveNumber: " + fullMoveNumber)
-                      // println(Ply(index).color)
-                      val situationAndFullMoveNumber =
-                        Situation.AndFullMoveNumber(
-                          y.situationAfter,
-                          fullMoveNumber
-                        )
-                      // println(Fen.write(situationAndFullMoveNumber))
-                      // println(y.toUci.uci)
-                      // println(index)
+                    { move =>
+                      (
+                        index + 1,
+                        move.toUci.uci,
+                        Fen
+                          .write(
+                            Situation.AndFullMoveNumber(
+                              move.situationAfter,
+                              Ply(index).fullMoveNumber
+                            )
+                          )
+                          .toString()
+                      )
                     },
-                    { z =>
-                      val fullMoveNumber = Ply(index).fullMoveNumber
-                      // println("fullMoveNumber: " + fullMoveNumber)
-                      // println(Ply(index).color)
-                      val situationAndFullMoveNumber =
-                        Situation.AndFullMoveNumber(
-                          z.situationAfter,
-                          fullMoveNumber
-                        )
-                      // println(Fen.write(situationAndFullMoveNumber))
-                      // println(z.toUci.uci)
-                      // println(index)
+                    { drop =>
+                      (
+                        index + 1,
+                        drop.toUci.uci,
+                        Fen
+                          .write(
+                            Situation.AndFullMoveNumber(
+                              drop.situationAfter,
+                              Ply(index).fullMoveNumber
+                            )
+                          )
+                          .toString()
+                      )
                     }
                   )
                 )
@@ -163,25 +139,28 @@ val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
             )
           }
         )
-        lines.clear()
-        if (gameCount % 500 == 0) {
-          println(LocalDateTime.now())
-          println(gameCount)
-        }
-        // break
-    }
+      // zip together custom and lichess move parsing
+      customMoveParsing
+        .zip(lichessMoveParsing)
+        .foreach((x, y) =>
+          moveWriter.println(
+            (x._1, x._2, x._3, y._1, y._2, y._3).productIterator.mkString(",")
+          )
+        )
+      lines.clear()
+      if (gameCount % 500 == 0) {
+        println(LocalDateTime.now())
+        println(gameCount)
+      }
   }
 
   gameWriter.close()
-  // println(s"Found $count games")
-  // println(Tag.tagTypes)
+  moveWriter.close()
 
 val SCORES = List("1-0\n", "0-1\n", "1/2-1/2\n")
 
-type Move = (String, String, String)
-
-def parseSans(game_str: String): List[Move] = {
-  var moves: List[Move] = List()
+def customParseMoves(game_str: String): List[(String, String, String)] = {
+  var moves: List[(String, String, String)] = List()
   val game_split = game_str.split(" ")
   if (!game_str.contains("...")) {
     // Assume it's an old-style game, like
