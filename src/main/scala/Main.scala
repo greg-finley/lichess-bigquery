@@ -70,6 +70,7 @@ val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
   val gameWriter = new PrintWriter(new FileWriter(gamesFile, true))
   val moveWriter = new PrintWriter(new FileWriter(movesFile, true))
   val futures = ListBuffer[Future[Unit]]()
+  var futureCount = 0
   for (line <- source.getLines()) {
     if (line == "") then {} else if (line.startsWith("[")) then
       if (line.startsWith("[Event") && lines.length > 0) then
@@ -78,6 +79,7 @@ val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
         futures += Future {
           processGame(linesList, "", gameWriter, moveWriter)
         }
+        futureCount += 1
         lines.clear()
       lines += line
     else if (line.startsWith("1.")) then
@@ -85,12 +87,14 @@ val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
       futures += Future {
         processGame(linesList, line, gameWriter, moveWriter)
       }
+      futureCount += 1
       lines.clear()
-    if (futures.length > 100) then
+    if (futureCount > 100) then
       for (future <- futures) {
         Await.result(future, Duration.Inf)
       }
       futures.clear()
+      futureCount = 0
   }
 
   for (future <- futures) {
