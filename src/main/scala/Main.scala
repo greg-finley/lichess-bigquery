@@ -91,7 +91,7 @@ val SCORES = List("1-0\n", "0-1\n", "1/2-1/2\n")
 def customParseMoves(movesStr: String): List[(String, String, String)] = {
   var moves: List[(String, String, String)] = List()
   val game_split = movesStr.split(" ")
-  if (!movesStr.contains("...")) {
+  if (!movesStr.contains("...") && !movesStr.contains("{")) {
     // Assume it's an old-style game, like
     // 1. Kh3 Rb4 2. Rg4 Be4 3. Kh4 0-1
     for (i <- 0 until game_split.length) {
