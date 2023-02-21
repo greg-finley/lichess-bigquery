@@ -52,7 +52,7 @@ val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
 
 @main def parsePgn: Unit =
   val source =
-    scala.io.Source.fromFile("lichess_db_racingKings_rated_2023-01.pgn")
+    scala.io.Source.fromFile("lichess_db_atomic_rated_2015-01.pgn")
   val lines: ListBuffer[String] = ListBuffer()
   val gamesFile = new File("games.csv")
   val movesFile = new File("moves.csv")
@@ -189,8 +189,8 @@ def processGame(
         result.valid.fold(
           errors => {
             println(s"Failed to parse PGN: ${errors.toString()}")
-            // halt the program
-            sys.exit(1)
+            // Throw away the moves if invalid (some old variant games)
+            List()
           },
           replay => {
             replay.chronoMoves.zipWithIndex.map((x, index) =>
