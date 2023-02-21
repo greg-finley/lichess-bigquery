@@ -5,8 +5,11 @@ import chess.format.{Fen, Uci}
 import chess.format.pgn.{ParsedPgn, Parser, PgnStr, Reader}
 import chess.MoveOrDrop.*
 
+import com.google.cloud.bigquery.BigQueryOptions;
+
 import java.time.LocalDateTime
 import java.io._
+import collection.convert.ImplicitConversionsToScala.*
 
 import scala.collection.mutable.{LinkedHashMap, ListBuffer}
 import scala.util.control.Breaks.*
@@ -14,6 +17,11 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+
+case class VariantMonthYear(
+    variant: String,
+    monthYear: String
+)
 
 // Freeze the list and ignore any future tags, so BigQuery has a consistent schema
 // Maybe if we get a new tag in the future we can edit the old schemas
@@ -51,8 +59,9 @@ val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
 )
 
 @main def parsePgn: Unit =
+  println(getExistingBigQueryTables())
   val source =
-    scala.io.Source.fromFile("lichess_db_atomic_rated_2015-01.pgn")
+    scala.io.Source.fromFile("lichess_db_racingKings_rated_2023-01.pgn")
   val lines: ListBuffer[String] = ListBuffer()
   val gamesFile = new File("games.csv")
   val movesFile = new File("moves.csv")
@@ -87,6 +96,17 @@ val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
   moveWriter.close()
 
 val SCORES = List("1-0\n", "0-1\n", "1/2-1/2\n")
+
+def getExistingBigQueryTables(): Set[VariantMonthYear] = {
+  BigQueryOptions.getDefaultInstance.getService
+    .getDataset("lichess")
+    .list()
+    .iterateAll()
+    .map(_.getTableId.getTable)
+    .map(_.split("_"))
+    .map(arr => VariantMonthYear(arr(1), arr(2) + "-" + arr(3)))
+    .toSet
+}
 
 def customParseMoves(movesStr: String): List[(String, String, String)] = {
   var moves: List[(String, String, String)] = List()
