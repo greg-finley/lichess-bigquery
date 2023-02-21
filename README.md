@@ -47,7 +47,7 @@ git clone https://github.com/greg-finley/lichess-bigquery
 git clone https://github.com/lichess-org/scalachess.git
 git clone https://github.com/ornicar/scalalib.git
 cd scalalib && sbt publishLocal && cd ..
-cd scalachess && git checkout a595cf1081132209e3b084ec94ec44fa882970d6 && sbt publishLocal && cd ..
+cd scalachess && sbt publishLocal && cd ..
 cd lichess-bigquery && sbt compile
 sudo apt-get install zstd -y
 curl https://database.lichess.org/crazyhouse/lichess_db_crazyhouse_rated_2023-01.pgn.zst --output lichess_db_crazyhouse_rated_2023-01.pgn.zst
