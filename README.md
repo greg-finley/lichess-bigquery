@@ -69,3 +69,14 @@ on moves.game_id = g.GameId
 where moves.game_id is null
 limit 100
 ```
+
+## Benckmark
+
+For `lichess_db_racingKings_rated_2023-01` (75k games):
+
+`e2-medium`: $0.04/hour, sbt run in 03:05
+`e2-highcpu-4`: $0.11/hour, sbt run in 1:26
+`e2-highcpu-8`: $0.22/hour, sbt run in 0:43
+`e2-standard-8`: $0.30/hour, sbt run in 0:40
+`e2-highcpu-16`: $0.44/hour, sbt run in 0:32
+`e2-highcpu-32`: $0.87/hour, sbt run in 0:26
