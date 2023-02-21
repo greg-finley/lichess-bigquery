@@ -62,8 +62,16 @@ val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
   val moveWriter = new PrintWriter(new FileWriter(movesFile, true))
   val futures = ListBuffer[Future[Unit]]()
   for (line <- source.getLines()) {
-    lines += line
-    if (line.startsWith("1.")) then
+    if (line == "") then {} else if (line.startsWith("[")) then
+      if (line.startsWith("[Event") && lines.length > 0) then
+        // Corner case where the previous game had no moves
+        val linesList = lines.toList
+        futures += Future {
+          processGame(linesList, "", gameWriter, moveWriter)
+        }
+        lines.clear()
+      lines += line
+    else if (line.startsWith("1.")) then
       val linesList = lines.toList
       futures += Future {
         processGame(linesList, line, gameWriter, moveWriter)
@@ -80,10 +88,10 @@ val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
 
 val SCORES = List("1-0\n", "0-1\n", "1/2-1/2\n")
 
-def customParseMoves(game_str: String): List[(String, String, String)] = {
+def customParseMoves(movesStr: String): List[(String, String, String)] = {
   var moves: List[(String, String, String)] = List()
-  val game_split = game_str.split(" ")
-  if (!game_str.contains("...")) {
+  val game_split = movesStr.split(" ")
+  if (!movesStr.contains("...")) {
     // Assume it's an old-style game, like
     // 1. Kh3 Rb4 2. Rg4 Be4 3. Kh4 0-1
     for (i <- 0 until game_split.length) {
