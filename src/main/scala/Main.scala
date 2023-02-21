@@ -61,7 +61,7 @@ val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
 @main def parsePgn: Unit =
   println(getExistingBigQueryTables())
   val source =
-    scala.io.Source.fromFile("lichess_db_racingKings_rated_2023-01.pgn")
+    scala.io.Source.fromFile("lichess_db_crazyhouse_rated_2023-01.pgn")
   val lines: ListBuffer[String] = ListBuffer()
   val gamesFile = new File("games.csv")
   val movesFile = new File("moves.csv")
@@ -86,6 +86,11 @@ val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
         processGame(linesList, line, gameWriter, moveWriter)
       }
       lines.clear()
+    if (futures.length > 100) then
+      for (future <- futures) {
+        Await.result(future, Duration.Inf)
+      }
+      futures.clear()
   }
 
   for (future <- futures) {
