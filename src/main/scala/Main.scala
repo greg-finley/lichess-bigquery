@@ -14,6 +14,7 @@ import collection.convert.ImplicitConversionsToScala.*
 
 import scala.collection.mutable.{LinkedHashMap, ListBuffer}
 import scala.util.control.Breaks.*
+import scala.util.{Success, Failure}
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Await
@@ -346,23 +347,38 @@ def downloadAndUnzipZstFile(variantMonthYear: VariantMonthYear) =
     sys.exit(1)
   }
 
-def writeToBigQuery(variantMonthYear: VariantMonthYear) =
-  // TODO: Do these in parallel
+def writeToBigQuery(variantMonthYear: VariantMonthYear) = {
   println(s"Writing to BigQuery ${variantMonthYear}")
   val tableNameSuffix =
     s"_${variantMonthYear.variant}_${variantMonthYear.monthYear.replace("-", "_")}"
-  val bqMovesExitCode =
+
+  val movesFuture = Future {
     s"bq load --noreplace --location=EU --source_format=CSV lichess.moves${tableNameSuffix} moves.csv move_schema.json".!
-  if (bqMovesExitCode != 0) {
-    println(s"Failed to load moves to BigQuery ${variantMonthYear}")
-    sys.exit(1)
   }
-  val bqGamesExitCode =
+
+  val gamesFuture = Future {
     s"bq load --noreplace --location=EU --source_format=CSV lichess.games${tableNameSuffix} games.csv game_schema.json".!
-  if (bqGamesExitCode != 0) {
-    println(s"Failed to load games to BigQuery ${variantMonthYear}")
-    sys.exit(1)
   }
+
+  val resultsFuture = for {
+    movesResult <- movesFuture
+    gamesResult <- gamesFuture
+  } yield (movesResult, gamesResult)
+
+  resultsFuture.onComplete {
+    case Success((bqMovesExitCode, bqGamesExitCode)) =>
+      if (bqMovesExitCode != 0) {
+        println(s"Failed to load moves to BigQuery ${variantMonthYear}")
+        sys.exit(1)
+      } else if (bqGamesExitCode != 0) {
+        println(s"Failed to load games to BigQuery ${variantMonthYear}")
+        sys.exit(1)
+      }
+    case Failure(ex) =>
+      println(s"An error occurred: ${ex.getMessage}")
+      sys.exit(1)
+  }
+}
 
 def deletePgnFile(variantMonthYear: VariantMonthYear) =
   val pgnName =
