@@ -1,3 +1,5 @@
+package PgnParser
+
 import cats.data.Validated
 import cats.Show.Shown
 import chess.{Game, Pos, Ply, Situation}
@@ -22,8 +24,165 @@ import scala.concurrent.duration.Duration
 
 import sys.process._
 
+import BigQueryLoader.loadCSVToBigQuery
+import com.google.cloud.bigquery.{Field, Schema, TableId, StandardSQLTypeName}
+
 // TODO: Make a proper enum
 val variants = List("racingKings")
+
+val moveSchema = Schema.of(
+  Field
+    .newBuilder("san", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.REQUIRED)
+    .build(),
+  Field
+    .newBuilder("clock", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("eval", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("ply", StandardSQLTypeName.INT64)
+    .setMode(Field.Mode.REQUIRED)
+    .build(),
+  Field
+    .newBuilder("uci", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.REQUIRED)
+    .build(),
+  Field
+    .newBuilder("fen", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.REQUIRED)
+    .build(),
+  Field
+    .newBuilder("GameId", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.REQUIRED)
+    .build()
+)
+
+val gameSchema = Schema.of(
+  Field
+    .newBuilder("Event", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("Site", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("GameId", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("Date", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("UTCDate", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("UTCTime", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("Round", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("Board", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("White", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("Black", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("TimeControl", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("WhiteClock", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("BlackClock", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("WhiteElo", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("BlackElo", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("WhiteRatingDiff", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("BlackRatingDiff", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("WhiteTitle", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("BlackTitle", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("WhiteTeam", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("BlackTeam", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("WhiteFideId", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("BlackFideId", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("Result", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("FEN", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("Variant", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("ECO", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("Opening", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("Termination", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build(),
+  Field
+    .newBuilder("Annotator", StandardSQLTypeName.STRING)
+    .setMode(Field.Mode.NULLABLE)
+    .build()
+)
 
 case class VariantMonthYear(
     variant: String,
@@ -353,31 +512,23 @@ def writeToBigQuery(variantMonthYear: VariantMonthYear) = {
     s"_${variantMonthYear.variant}_${variantMonthYear.monthYear.replace("-", "_")}"
 
   val movesFuture = Future {
-    s"bq load --noreplace --location=EU --source_format=CSV lichess.moves${tableNameSuffix} moves.csv move_schema.json".!
+    BigQueryLoader.loadCSVToBigQuery(
+      TableId.of("greg-finley", "lichess", s"moves${tableNameSuffix}"),
+      moveSchema,
+      "moves.csv"
+    )
   }
 
   val gamesFuture = Future {
-    s"bq load --noreplace --location=EU --source_format=CSV lichess.games${tableNameSuffix} games.csv game_schema.json".!
+    BigQueryLoader.loadCSVToBigQuery(
+      TableId.of("greg-finley", "lichess", s"games${tableNameSuffix}"),
+      gameSchema,
+      "games.csv"
+    )
   }
 
-  val resultsFuture = for {
-    movesResult <- movesFuture
-    gamesResult <- gamesFuture
-  } yield (movesResult, gamesResult)
-
-  resultsFuture.onComplete {
-    case Success((bqMovesExitCode, bqGamesExitCode)) =>
-      if (bqMovesExitCode != 0) {
-        println(s"Failed to load moves to BigQuery ${variantMonthYear}")
-        sys.exit(1)
-      } else if (bqGamesExitCode != 0) {
-        println(s"Failed to load games to BigQuery ${variantMonthYear}")
-        sys.exit(1)
-      }
-    case Failure(ex) =>
-      println(s"An error occurred: ${ex.getMessage}")
-      sys.exit(1)
-  }
+  Await.result(movesFuture, Duration.Inf)
+  Await.result(gamesFuture, Duration.Inf)
 }
 
 def deletePgnFile(variantMonthYear: VariantMonthYear) =
