@@ -524,60 +524,44 @@ def writeToBigQuery(variantMonthYear: VariantMonthYear) = {
 
   val bucketName = "lichess-bigquery"
 
-  val movesGcsFuture = Future {
+  val movesFuture = Future {
     GcsFileUploader.copyFileToGcs(
       bucketName,
       "moves.csv",
       f"moves${tableNameSuffix}.csv"
     )
-  }
-
-  val gamesGcsFuture = Future {
-    GcsFileUploader.copyFileToGcs(
-      bucketName,
-      "games.csv",
-      f"games${tableNameSuffix}.csv"
-    )
-  }
-
-  Await.result(movesGcsFuture, Duration.Inf)
-  Await.result(gamesGcsFuture, Duration.Inf)
-
-  val movesFuture = Future {
+  }.map(_ =>
     BigQueryLoader.loadCSVToBigQuery(
       TableId.of("greg-finley", "lichess", s"moves${tableNameSuffix}"),
       moveSchema,
       f"gs://${bucketName}/moves${tableNameSuffix}.csv"
     )
-  }
+    GcsFileUploader.deleteGcsFile(
+      bucketName,
+      f"moves${tableNameSuffix}.csv"
+    )
+  )
 
   val gamesFuture = Future {
+    GcsFileUploader.copyFileToGcs(
+      bucketName,
+      "games.csv",
+      f"games${tableNameSuffix}.csv"
+    )
+  }.map(_ =>
     BigQueryLoader.loadCSVToBigQuery(
       TableId.of("greg-finley", "lichess", s"games${tableNameSuffix}"),
       gameSchema,
       f"gs://${bucketName}/games${tableNameSuffix}.csv"
     )
-  }
-
-  Await.result(movesFuture, Duration.Inf)
-  Await.result(gamesFuture, Duration.Inf)
-
-  val deleteMovesGcsFuture = Future {
-    GcsFileUploader.deleteGcsFile(
-      bucketName,
-      f"moves${tableNameSuffix}.csv"
-    )
-  }
-
-  val deleteGamesGcsFuture = Future {
     GcsFileUploader.deleteGcsFile(
       bucketName,
       f"games${tableNameSuffix}.csv"
     )
-  }
+  )
 
-  Await.result(deleteMovesGcsFuture, Duration.Inf)
-  Await.result(deleteGamesGcsFuture, Duration.Inf)
+  Await.result(movesFuture, Duration.Inf)
+  Await.result(gamesFuture, Duration.Inf)
 }
 
 def deletePgnFile(variantMonthYear: VariantMonthYear) =
