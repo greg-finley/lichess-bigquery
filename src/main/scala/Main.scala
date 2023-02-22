@@ -5,7 +5,8 @@ import chess.format.{Fen, Uci}
 import chess.format.pgn.{ParsedPgn, Parser, PgnStr, Reader}
 import chess.MoveOrDrop.*
 
-import com.google.cloud.bigquery.BigQueryOptions;
+import com.google.cloud.bigquery.BigQueryOptions
+import sttp.client3._
 
 import java.time.LocalDateTime
 import java.io._
@@ -17,6 +18,11 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+
+import sys.process._
+
+// TODO: Make a proper enum
+val variants = List("racingKings")
 
 case class VariantMonthYear(
     variant: String,
@@ -60,7 +66,29 @@ val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
 
 @main def main: Unit =
   val existingBigQueryTablesFuture = getExistingBigQueryTables()
-  parseFile(VariantMonthYear("crazyhouse", "2023-01"))
+  for (variant <- variants) {
+    getLichessFileList(variant)
+      .map(_.split("\n"))
+      .map(x =>
+        VariantMonthYear(
+          variant,
+          x(0).split("_")(3)
+        )
+      )
+      .map(variantMonthYear => {
+        val existingBigQueryTables =
+          Await.result(existingBigQueryTablesFuture, Duration.Inf)
+        if (
+          !existingBigQueryTables
+            .contains(variantMonthYear)
+        ) {
+          downloadAndUnzipZstFile(variantMonthYear)
+          parseFile(variantMonthYear)
+          writeToBigQuery(variantMonthYear)
+          deletePgnFile(variantMonthYear)
+        }
+      })
+  }
 
 def parseFile(variantMonthYear: VariantMonthYear): Unit =
   val source =
@@ -68,8 +96,11 @@ def parseFile(variantMonthYear: VariantMonthYear): Unit =
       s"lichess_db_${variantMonthYear.variant}_rated_${variantMonthYear.monthYear}.pgn"
     )
   val lines: ListBuffer[String] = ListBuffer()
-  val gamesFile = new File("games.csv")
-  val movesFile = new File("moves.csv")
+  val gamesFile =
+    new File(
+      "games.csv"
+    ) // if parallelizing this job more, rename this to include variant and monthYear
+  val movesFile = new File("moves.csv") // ditto
   if (gamesFile.exists()) gamesFile.delete()
   if (movesFile.exists()) movesFile.delete()
   val gameWriter = new PrintWriter(new FileWriter(gamesFile, true))
@@ -273,3 +304,70 @@ def processGame(
       )
     )
 }
+
+def getLichessFileList(variant: String) =
+  val request = basicRequest.get(
+    uri"https://database.lichess.org/${variant}/list.txt"
+  )
+
+  val backend = HttpClientFutureBackend()
+  request
+    .send(backend)
+    .map(response =>
+      response.body match {
+        case Left(error) =>
+          println(s"Error: $error")
+          sys.exit(1)
+        case Right(body) => body
+      }
+    )
+
+def downloadAndUnzipZstFile(variantMonthYear: VariantMonthYear) =
+  // TODO: Download Standard variant from torrent instead
+  val zstName =
+    s"lichess_db_${variantMonthYear.variant}_rated_${variantMonthYear.monthYear}.pgn.zst"
+  val curlExitCode =
+    s"curl https://database.lichess.org/${variantMonthYear.variant}/${zstName} --output ${zstName}".!
+  if (curlExitCode != 0) {
+    println(s"Failed to download ${variantMonthYear}")
+    sys.exit(1)
+  }
+  val unzipExitCode =
+    s"pzstd -d ${zstName}".!
+  if (unzipExitCode != 0) {
+    println(s"Failed to unzip ${variantMonthYear}")
+    sys.exit(1)
+  }
+  val rmExitCode =
+    s"rm ${zstName}".!
+  if (rmExitCode != 0) {
+    println(s"Failed to remove ZST ${variantMonthYear}")
+    sys.exit(1)
+  }
+
+def writeToBigQuery(variantMonthYear: VariantMonthYear) =
+  // TODO: Do these in parallel
+  val tableNameSuffix =
+    s"_${variantMonthYear.variant}_${variantMonthYear.monthYear.replace("-", "_")}"
+  val bqMovesExitCode =
+    s"bq load --noreplace --location=EU --source_format=CSV lichess.moves${tableNameSuffix} moves.csv move_schema.json".!
+  if (bqMovesExitCode != 0) {
+    println(s"Failed to load moves to BigQuery ${variantMonthYear}")
+    sys.exit(1)
+  }
+  val bqGamesExitCode =
+    s"bq load --noreplace --location=EU --source_format=CSV lichess.games${tableNameSuffix} games.csv game_schema.json".!
+  if (bqGamesExitCode != 0) {
+    println(s"Failed to load games to BigQuery ${variantMonthYear}")
+    sys.exit(1)
+  }
+
+def deletePgnFile(variantMonthYear: VariantMonthYear) =
+  val pgnName =
+    s"lichess_db_${variantMonthYear.variant}_rated_${variantMonthYear.monthYear}.pgn"
+  val rmExitCode =
+    s"rm ${pgnName}".!
+  if (rmExitCode != 0) {
+    println(s"Failed to remove PGN ${variantMonthYear}")
+    sys.exit(1)
+  }
