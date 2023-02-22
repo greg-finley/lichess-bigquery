@@ -126,21 +126,21 @@ def getExistingBigQueryTables(): Future[Set[VariantMonthYear]] = {
 
 def customParseMoves(movesStr: String): List[(String, String, String)] = {
   var moves: List[(String, String, String)] = List()
-  val game_split = movesStr.split(" ")
+  val gameSplit = movesStr.split(" ")
   if (!movesStr.contains("...") && !movesStr.contains("{")) {
     // Assume it's an old-style game, like
     // 1. Kh3 Rb4 2. Rg4 Be4 3. Kh4 0-1
-    for (i <- 0 until game_split.length) {
-      val part = game_split(i)
+    for (i <- 0 until gameSplit.length) {
+      val part = gameSplit(i)
       if (part.contains(".")) {
-        val move = game_split(i + 1)
+        val move = gameSplit(i + 1)
         if (SCORES.contains(move)) {
           break()
         }
         var black_move = ""
         // Try to add black's move. Might not be present at the end of the game
-        if (i + 2 < game_split.length) {
-          black_move = game_split(i + 2)
+        if (i + 2 < gameSplit.length) {
+          black_move = gameSplit(i + 2)
         }
         if (!SCORES.contains(black_move)) {
           moves = moves :+ (move, "", "")
@@ -153,19 +153,19 @@ def customParseMoves(movesStr: String): List[(String, String, String)] = {
   } else {
     // Otherwise, assume it's a new-style game, like
     // 1. e4 { [%eval 0.17] [%clk 0:00:30] } 1... c5 { [%eval 0.19] [%clk 0:00:30] }
-    for (i <- 0 until game_split.length) {
-      val part = game_split(i)
+    for (i <- 0 until gameSplit.length) {
+      val part = gameSplit(i)
       if (part.contains(".") && !part.endsWith("]")) {
-        val move = game_split(i + 1)
+        val move = gameSplit(i + 1)
         var clk = ""
         var eval = ""
         try {
           var j = i + 2
-          while (!game_split(j).endsWith("}")) {
-            if (game_split(j).startsWith("[%clk")) {
-              clk = game_split(j + 1).stripSuffix("]")
-            } else if (game_split(j).startsWith("[%eval")) {
-              eval = game_split(j + 1).stripSuffix("]")
+          while (!gameSplit(j).endsWith("}")) {
+            if (gameSplit(j).startsWith("[%clk")) {
+              clk = gameSplit(j + 1).stripSuffix("]")
+            } else if (gameSplit(j).startsWith("[%eval")) {
+              eval = gameSplit(j + 1).stripSuffix("]")
             }
             j += 1
           }
@@ -188,8 +188,7 @@ def processGame(
   val gameTagValues = allTagValues.clone()
   for (line <- headerLines) {
     if (line.startsWith("[")) {
-      val tag = line.split(" ")
-      val tagName = tag(0).replace("[", "")
+      val tagName = line.split(" ")(0).replace("[", "")
       if (gameTagValues.contains(tagName)) then
         gameTagValues(tagName) = line
           .substring(tagName.length() + 2)
@@ -209,12 +208,9 @@ def processGame(
       }
   )
 
-  val allLines = headerLines :+ moveLine
-  val pgn = PgnStr(allLines.mkString("\n"))
-
   // tuple of (ply number, uci move, fen)
   val lichessMoveParsing: List[(Int, String, String, String)] = Reader
-    .full(pgn)
+    .full(PgnStr((headerLines :+ moveLine).mkString("\n")))
     .fold(
       errors => {
         println(s"Failed to read: ${errors.toString()}")
