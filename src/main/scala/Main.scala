@@ -75,26 +75,17 @@ val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
           x(0).split("_")(3)
         )
       )
-      .map(variantMonthAndYear => {
+      .map(variantMonthYear => {
         val existingBigQueryTables =
           Await.result(existingBigQueryTablesFuture, Duration.Inf)
         if (
           !existingBigQueryTables
-            .contains(
-              VariantMonthYear(
-                variantMonthAndYear.variant,
-                variantMonthAndYear.monthYear
-              )
-            )
+            .contains(variantMonthYear)
         ) {
-          downloadAndUnzipZstFile(variantMonthAndYear)
-          parseFile(
-            VariantMonthYear(
-              variantMonthAndYear.variant,
-              variantMonthAndYear.monthYear
-            )
-          )
-          deletePgnFile(variantMonthAndYear)
+          downloadAndUnzipZstFile(variantMonthYear)
+          parseFile(variantMonthYear)
+          writeToBigQuery(variantMonthYear)
+          deletePgnFile(variantMonthYear)
         }
       })
   }
@@ -331,34 +322,52 @@ def getLichessFileList(variant: String) =
       }
     )
 
-def downloadAndUnzipZstFile(variantMonthAndYear: VariantMonthYear) =
+def downloadAndUnzipZstFile(variantMonthYear: VariantMonthYear) =
+  // TODO: Download Standard variant from torrent instead
   val zstName =
-    s"lichess_db_${variantMonthAndYear.variant}_rated_${variantMonthAndYear.monthYear}.pgn.zst"
+    s"lichess_db_${variantMonthYear.variant}_rated_${variantMonthYear.monthYear}.pgn.zst"
   val curlExitCode =
-    s"curl https://database.lichess.org/${variantMonthAndYear.variant}/${zstName} --output ${zstName}".!
+    s"curl https://database.lichess.org/${variantMonthYear.variant}/${zstName} --output ${zstName}".!
   if (curlExitCode != 0) {
-    println(s"Failed to download ${variantMonthAndYear}")
+    println(s"Failed to download ${variantMonthYear}")
     sys.exit(1)
   }
   val unzipExitCode =
     s"pzstd -d ${zstName}".!
   if (unzipExitCode != 0) {
-    println(s"Failed to unzip ${variantMonthAndYear}")
+    println(s"Failed to unzip ${variantMonthYear}")
     sys.exit(1)
   }
   val rmExitCode =
     s"rm ${zstName}".!
   if (rmExitCode != 0) {
-    println(s"Failed to remove ZST ${variantMonthAndYear}")
+    println(s"Failed to remove ZST ${variantMonthYear}")
     sys.exit(1)
   }
 
-def deletePgnFile(variantMonthAndYear: VariantMonthYear) =
+def writeToBigQuery(variantMonthYear: VariantMonthYear) =
+  // TODO: Do these in parallel
+  val tableNameSuffix =
+    s"_${variantMonthYear.variant}_${variantMonthYear.monthYear.replace("-", "_")}"
+  val bqMovesExitCode =
+    s"bq load --noreplace --location=EU --source_format=CSV lichess.moves${tableNameSuffix} moves.csv move_schema.json".!
+  if (bqMovesExitCode != 0) {
+    println(s"Failed to load moves to BigQuery ${variantMonthYear}")
+    sys.exit(1)
+  }
+  val bqGamesExitCode =
+    s"bq load --noreplace --location=EU --source_format=CSV lichess.games${tableNameSuffix} games.csv game_schema.json".!
+  if (bqGamesExitCode != 0) {
+    println(s"Failed to load games to BigQuery ${variantMonthYear}")
+    sys.exit(1)
+  }
+
+def deletePgnFile(variantMonthYear: VariantMonthYear) =
   val pgnName =
-    s"lichess_db_${variantMonthAndYear.variant}_rated_${variantMonthAndYear.monthYear}.pgn"
+    s"lichess_db_${variantMonthYear.variant}_rated_${variantMonthYear.monthYear}.pgn"
   val rmExitCode =
     s"rm ${pgnName}".!
   if (rmExitCode != 0) {
-    println(s"Failed to remove PGN ${variantMonthAndYear}")
+    println(s"Failed to remove PGN ${variantMonthYear}")
     sys.exit(1)
   }
