@@ -50,13 +50,9 @@ cd scalalib && sbt publishLocal && cd ..
 cd scalachess && sbt publishLocal && cd ..
 cd lichess-bigquery && sbt compile
 sudo apt-get install zstd -y
-curl https://database.lichess.org/crazyhouse/lichess_db_crazyhouse_rated_2023-01.pgn.zst --output lichess_db_crazyhouse_rated_2023-01.pgn.zst
-pzstd -d lichess_db_crazyhouse_rated_2023-01.pgn.zst
-rm lichess_db_crazyhouse_rated_2023-01.pgn.zst
-sbt run
-bq load --noreplace --location=EU --source_format=CSV lichess.moves_crazyhouse_2023_01  moves.csv move_schema.json
-bq load --noreplace --location=EU --source_format=CSV lichess.games_crazyhouse_2023_01  games.csv game_schema.json
 ```
+
+`setsid nohup sbt run &`
 
 ## Games without moves
 
