@@ -7,6 +7,7 @@ lazy val root = (project in file("."))
     scalaVersion := scala3Version,
     libraryDependencies ++= Seq(
       "org.lichess" %% "scalachess" % "14.5.1",
-      "com.google.cloud" % "google-cloud-bigquery" % "2.22.0"
+      "com.google.cloud" % "google-cloud-bigquery" % "2.22.0",
+      "com.softwaremill.sttp.client3" %% "core" % "3.8.11"
     )
   )

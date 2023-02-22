@@ -5,7 +5,8 @@ import chess.format.{Fen, Uci}
 import chess.format.pgn.{ParsedPgn, Parser, PgnStr, Reader}
 import chess.MoveOrDrop.*
 
-import com.google.cloud.bigquery.BigQueryOptions;
+import com.google.cloud.bigquery.BigQueryOptions
+import sttp.client3._
 
 import java.time.LocalDateTime
 import java.io._
@@ -18,9 +19,18 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
+// TODO: Make a proper enum
+val variants = List("racingKings")
+
 case class VariantMonthYear(
     variant: String,
     monthYear: String
+)
+
+case class ZstFile(
+    variant: String,
+    monthYear: String,
+    filename: String
 )
 
 // Freeze the list and ignore any future tags, so BigQuery has a consistent schema
@@ -60,7 +70,30 @@ val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
 
 @main def main: Unit =
   val existingBigQueryTablesFuture = getExistingBigQueryTables()
-  parseFile(VariantMonthYear("crazyhouse", "2023-01"))
+  for (variant <- variants) {
+    getLichessFileList(variant)
+      .map(_.split("\n"))
+      .map(x =>
+        ZstFile(
+          variant,
+          x(0).split("_")(3),
+          x(0)
+        )
+      )
+      .map(zstFile => {
+        val existingBigQueryTables =
+          Await.result(existingBigQueryTablesFuture, Duration.Inf)
+        if (
+          !existingBigQueryTables
+            .contains(VariantMonthYear(zstFile.variant, zstFile.monthYear))
+        ) {
+          downloadAndUnzipZstFile(zstFile)
+          parseFile(VariantMonthYear(zstFile.variant, zstFile.monthYear))
+          deletePgnFile(zstFile.filename.replace(".zst", ""))
+        }
+      })
+  }
+  parseFile(VariantMonthYear("racingKings", "2023-01"))
 
 def parseFile(variantMonthYear: VariantMonthYear): Unit =
   val source =
@@ -273,3 +306,20 @@ def processGame(
       )
     )
 }
+
+def getLichessFileList(variant: String) =
+  val request = basicRequest.get(
+    uri"https://database.lichess.org/${variant}/list.txt"
+  )
+
+  val backend = HttpClientFutureBackend()
+  request
+    .send(backend)
+    .map(response =>
+      response.body match {
+        case Left(error) =>
+          println(s"Error: $error")
+          sys.exit(1)
+        case Right(body) => body
+      }
+    )
