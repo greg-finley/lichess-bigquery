@@ -14,18 +14,7 @@ object GcsFileUploader {
 
     val blobInfo = BlobInfo.newBuilder(bucketName, blobName).build()
 
-    val buffer = ByteBuffer.allocate(4096)
-    val channel = java.nio.file.Files
-      .newByteChannel(Paths.get(localFilePath), StandardOpenOption.READ)
-
-    val blob = storage.create(blobInfo)
-    while (channel.read(buffer) > 0) {
-      buffer.flip()
-      blob.writer().write(buffer)
-      buffer.clear()
-    }
-
-    channel.close()
+    storage.createFrom(blobInfo, Paths.get(localFilePath));
   }
 
   def deleteGcsFile(bucketName: String, blobName: String): Unit = {
