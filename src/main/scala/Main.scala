@@ -19,18 +19,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
+import sys.process._
+
 // TODO: Make a proper enum
 val variants = List("racingKings")
 
 case class VariantMonthYear(
     variant: String,
     monthYear: String
-)
-
-case class ZstFile(
-    variant: String,
-    monthYear: String,
-    filename: String
 )
 
 // Freeze the list and ignore any future tags, so BigQuery has a consistent schema
@@ -74,26 +70,34 @@ val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
     getLichessFileList(variant)
       .map(_.split("\n"))
       .map(x =>
-        ZstFile(
+        VariantMonthYear(
           variant,
-          x(0).split("_")(3),
-          x(0)
+          x(0).split("_")(3)
         )
       )
-      .map(zstFile => {
+      .map(variantMonthAndYear => {
         val existingBigQueryTables =
           Await.result(existingBigQueryTablesFuture, Duration.Inf)
         if (
           !existingBigQueryTables
-            .contains(VariantMonthYear(zstFile.variant, zstFile.monthYear))
+            .contains(
+              VariantMonthYear(
+                variantMonthAndYear.variant,
+                variantMonthAndYear.monthYear
+              )
+            )
         ) {
-          downloadAndUnzipZstFile(zstFile)
-          parseFile(VariantMonthYear(zstFile.variant, zstFile.monthYear))
-          deletePgnFile(zstFile.filename.replace(".zst", ""))
+          downloadAndUnzipZstFile(variantMonthAndYear)
+          parseFile(
+            VariantMonthYear(
+              variantMonthAndYear.variant,
+              variantMonthAndYear.monthYear
+            )
+          )
+          deletePgnFile(variantMonthAndYear)
         }
       })
   }
-  parseFile(VariantMonthYear("racingKings", "2023-01"))
 
 def parseFile(variantMonthYear: VariantMonthYear): Unit =
   val source =
@@ -101,8 +105,11 @@ def parseFile(variantMonthYear: VariantMonthYear): Unit =
       s"lichess_db_${variantMonthYear.variant}_rated_${variantMonthYear.monthYear}.pgn"
     )
   val lines: ListBuffer[String] = ListBuffer()
-  val gamesFile = new File("games.csv")
-  val movesFile = new File("moves.csv")
+  val gamesFile =
+    new File(
+      "games.csv"
+    ) // if parallelizing this job more, rename this to include variant and monthYear
+  val movesFile = new File("moves.csv") // ditto
   if (gamesFile.exists()) gamesFile.delete()
   if (movesFile.exists()) movesFile.delete()
   val gameWriter = new PrintWriter(new FileWriter(gamesFile, true))
@@ -323,3 +330,35 @@ def getLichessFileList(variant: String) =
         case Right(body) => body
       }
     )
+
+def downloadAndUnzipZstFile(variantMonthAndYear: VariantMonthYear) =
+  val zstName =
+    s"lichess_db_${variantMonthAndYear.variant}_rated_${variantMonthAndYear.monthYear}.pgn.zst"
+  val curlExitCode =
+    s"curl https://database.lichess.org/${variantMonthAndYear.variant}/${zstName} --output ${zstName}".!
+  if (curlExitCode != 0) {
+    println(s"Failed to download ${variantMonthAndYear}")
+    sys.exit(1)
+  }
+  val unzipExitCode =
+    s"pzstd -d ${zstName}".!
+  if (unzipExitCode != 0) {
+    println(s"Failed to unzip ${variantMonthAndYear}")
+    sys.exit(1)
+  }
+  val rmExitCode =
+    s"rm ${zstName}".!
+  if (rmExitCode != 0) {
+    println(s"Failed to remove ZST ${variantMonthAndYear}")
+    sys.exit(1)
+  }
+
+def deletePgnFile(variantMonthAndYear: VariantMonthYear) =
+  val pgnName =
+    s"lichess_db_${variantMonthAndYear.variant}_rated_${variantMonthAndYear.monthYear}.pgn"
+  val rmExitCode =
+    s"rm ${pgnName}".!
+  if (rmExitCode != 0) {
+    println(s"Failed to remove PGN ${variantMonthAndYear}")
+    sys.exit(1)
+  }
