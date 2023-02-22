@@ -29,7 +29,17 @@ import GcsFileUploader.{copyFileToGcs, deleteGcsFile}
 import com.google.cloud.bigquery.{Field, Schema, TableId, StandardSQLTypeName}
 
 // TODO: Make a proper enum
-val variants = List("racingKings")
+val variants = List(
+  "antichess",
+  "atomic",
+  "chess960",
+  "crazyhouse",
+  "horde",
+  "kingOfTheHill",
+  "racingKings",
+  // "standard",
+  "threeCheck"
+)
 
 val moveSchema = Schema.of(
   Field
