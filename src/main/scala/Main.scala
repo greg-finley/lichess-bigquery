@@ -25,6 +25,7 @@ import scala.concurrent.duration.Duration
 import sys.process._
 
 import BigQueryLoader.loadCSVToBigQuery
+import GcsFileUploader.{copyFileToGcs, deleteGcsFile}
 import com.google.cloud.bigquery.{Field, Schema, TableId, StandardSQLTypeName}
 
 // TODO: Make a proper enum
@@ -511,11 +512,32 @@ def writeToBigQuery(variantMonthYear: VariantMonthYear) = {
   val tableNameSuffix =
     s"_${variantMonthYear.variant}_${variantMonthYear.monthYear.replace("-", "_")}"
 
+  val bucketName = "lichess-bigquery"
+
+  val movesGcsFuture = Future {
+    GcsFileUploader.copyFileToGcs(
+      bucketName,
+      "moves.csv",
+      f"moves${tableNameSuffix}.csv"
+    )
+  }
+
+  val gamesGcsFuture = Future {
+    GcsFileUploader.copyFileToGcs(
+      bucketName,
+      "games.csv",
+      f"games${tableNameSuffix}.csv"
+    )
+  }
+
+  Await.result(movesGcsFuture, Duration.Inf)
+  Await.result(gamesGcsFuture, Duration.Inf)
+
   val movesFuture = Future {
     BigQueryLoader.loadCSVToBigQuery(
       TableId.of("greg-finley", "lichess", s"moves${tableNameSuffix}"),
       moveSchema,
-      "moves.csv"
+      f"gs://${bucketName}/moves${tableNameSuffix}.csv"
     )
   }
 
@@ -523,12 +545,29 @@ def writeToBigQuery(variantMonthYear: VariantMonthYear) = {
     BigQueryLoader.loadCSVToBigQuery(
       TableId.of("greg-finley", "lichess", s"games${tableNameSuffix}"),
       gameSchema,
-      "games.csv"
+      f"gs://${bucketName}/games${tableNameSuffix}.csv"
     )
   }
 
   Await.result(movesFuture, Duration.Inf)
   Await.result(gamesFuture, Duration.Inf)
+
+  val deleteMovesGcsFuture = Future {
+    GcsFileUploader.deleteGcsFile(
+      bucketName,
+      f"moves${tableNameSuffix}.csv"
+    )
+  }
+
+  val deleteGamesGcsFuture = Future {
+    GcsFileUploader.deleteGcsFile(
+      bucketName,
+      f"games${tableNameSuffix}.csv"
+    )
+  }
+
+  Await.result(deleteMovesGcsFuture, Duration.Inf)
+  Await.result(deleteGamesGcsFuture, Duration.Inf)
 }
 
 def deletePgnFile(variantMonthYear: VariantMonthYear) =

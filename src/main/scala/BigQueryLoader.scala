@@ -12,16 +12,15 @@ import com.google.cloud.bigquery.{
 import com.google.cloud.bigquery.FormatOptions
 import com.google.cloud.bigquery.JobInfo.WriteDisposition
 import com.google.cloud.bigquery.JobInfo.CreateDisposition
-import java.nio.file.Paths
 
 object BigQueryLoader {
-  def loadCSVToBigQuery(tableId: TableId, schema: Schema, csvPath: String) =
+  def loadCSVToBigQuery(tableId: TableId, schema: Schema, gcsPath: String) =
     val bigquery: BigQuery = BigQueryOptions.getDefaultInstance().getService()
 
     val formatOptions = FormatOptions.csv()
 
     val loadJobConfig = LoadJobConfiguration
-      .newBuilder(tableId, Paths.get(csvPath).toString())
+      .newBuilder(tableId, gcsPath)
       .setSchema(schema)
       .setFormatOptions(formatOptions)
       .setWriteDisposition(WriteDisposition.WRITE_EMPTY)
