@@ -91,6 +91,7 @@ val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
   }
 
 def parseFile(variantMonthYear: VariantMonthYear): Unit =
+  println(s"Parsing ${variantMonthYear}")
   val source =
     scala.io.Source.fromFile(
       s"lichess_db_${variantMonthYear.variant}_rated_${variantMonthYear.monthYear}.pgn"
@@ -324,6 +325,7 @@ def getLichessFileList(variant: String) =
 
 def downloadAndUnzipZstFile(variantMonthYear: VariantMonthYear) =
   // TODO: Download Standard variant from torrent instead
+  println(s"Downloading ${variantMonthYear}")
   val zstName =
     s"lichess_db_${variantMonthYear.variant}_rated_${variantMonthYear.monthYear}.pgn.zst"
   val curlExitCode =
@@ -347,6 +349,7 @@ def downloadAndUnzipZstFile(variantMonthYear: VariantMonthYear) =
 
 def writeToBigQuery(variantMonthYear: VariantMonthYear) =
   // TODO: Do these in parallel
+  println(s"Writing to BigQuery ${variantMonthYear}")
   val tableNameSuffix =
     s"_${variantMonthYear.variant}_${variantMonthYear.monthYear.replace("-", "_")}"
   val bqMovesExitCode =
