@@ -307,6 +307,7 @@ def processGame(
 }
 
 def getLichessFileList(variant: String) =
+  // TODO: Make this async
   val request = basicRequest.get(
     uri"https://database.lichess.org/${variant}/list.txt"
   )
