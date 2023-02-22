@@ -58,10 +58,15 @@ val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
   "Annotator" -> null
 )
 
-@main def parsePgn: Unit =
-  println(getExistingBigQueryTables())
+@main def main: Unit =
+  val existingBigQueryTablesFuture = getExistingBigQueryTables()
+  parseFile(VariantMonthYear("crazyhouse", "2023-01"))
+
+def parseFile(variantMonthYear: VariantMonthYear): Unit =
   val source =
-    scala.io.Source.fromFile("lichess_db_crazyhouse_rated_2023-01.pgn")
+    scala.io.Source.fromFile(
+      s"lichess_db_${variantMonthYear.variant}_rated_${variantMonthYear.monthYear}.pgn"
+    )
   val lines: ListBuffer[String] = ListBuffer()
   val gamesFile = new File("games.csv")
   val movesFile = new File("moves.csv")
@@ -106,15 +111,17 @@ val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
 
 val SCORES = List("1-0\n", "0-1\n", "1/2-1/2\n")
 
-def getExistingBigQueryTables(): Set[VariantMonthYear] = {
-  BigQueryOptions.getDefaultInstance.getService
-    .getDataset("lichess")
-    .list()
-    .iterateAll()
-    .map(_.getTableId.getTable)
-    .map(_.split("_"))
-    .map(arr => VariantMonthYear(arr(1), arr(2) + "-" + arr(3)))
-    .toSet
+def getExistingBigQueryTables(): Future[Set[VariantMonthYear]] = {
+  Future(
+    BigQueryOptions.getDefaultInstance.getService
+      .getDataset("lichess")
+      .list()
+      .iterateAll()
+      .map(_.getTableId.getTable)
+      .map(_.split("_"))
+      .map(arr => VariantMonthYear(arr(1), arr(2) + "-" + arr(3)))
+      .toSet
+  )
 }
 
 def customParseMoves(movesStr: String): List[(String, String, String)] = {
