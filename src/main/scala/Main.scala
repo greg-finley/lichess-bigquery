@@ -68,11 +68,11 @@ val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
   val existingBigQueryTablesFuture = getExistingBigQueryTables()
   for (variant <- variants) {
     getLichessFileList(variant)
-      .map(_.split("\n"))
+      .split("\n")
       .map(x =>
         VariantMonthYear(
           variant,
-          x(0).split("_")(3)
+          x.split("_")(4).split("\\.")(0)
         )
       )
       .map(variantMonthYear => {
@@ -306,23 +306,21 @@ def processGame(
     )
 }
 
-def getLichessFileList(variant: String) =
+def getLichessFileList(variant: String): String =
   // TODO: Make this async
   val request = basicRequest.get(
     uri"https://database.lichess.org/${variant}/list.txt"
   )
 
-  val backend = HttpClientFutureBackend()
+  val backend = HttpClientSyncBackend()
   request
     .send(backend)
-    .map(response =>
-      response.body match {
-        case Left(error) =>
-          println(s"Error: $error")
-          sys.exit(1)
-        case Right(body) => body
-      }
-    )
+    .body match {
+    case Left(error) =>
+      println(s"Error: $error")
+      sys.exit(1)
+    case Right(body) => body
+  }
 
 def downloadAndUnzipZstFile(variantMonthYear: VariantMonthYear) =
   // TODO: Download Standard variant from torrent instead
