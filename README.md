@@ -18,6 +18,7 @@ This library exposes the [Lichess database](https://database.lichess.org/) as pu
 4. Handle all the giant files for standard chess
 5. Section encouraging people to tell me if they did anything interesting with the data
 6. Talk about how to keep costs down. Prototype on variant tables / early Lichess tables. Don't select unnecessary columns. Export to GCS and then download.
+7. bq update -d --storage_billing_model=PHYSICAL greg-finley:lichess https://cloud.google.com/bigquery/docs/updating-datasets#update_storage_billing_models
 
 ## Sample queries
 
