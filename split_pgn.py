@@ -53,7 +53,7 @@ def split_pgn(variant: str, year_month: str):
     os_run(f"rm lichess_db_{variant}_rated_{year_month}.pgn")
 
     for i in range(1, current_file_index + 1):
-        file_name = f"lichess_db_{variant}_rated_{year_month}_{i:04d}.pgn"
+        file_name = f"lichess_db_{variant}_rated_{year_month}_{i:05d}.pgn"
         blob = bucket.blob(file_name)
         print(f"Uploading {file_name}")
         blob.upload_from_filename(file_name)

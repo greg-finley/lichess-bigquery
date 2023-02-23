@@ -51,9 +51,12 @@ cd scalalib && sbt publishLocal && cd ..
 cd scalachess && sbt publishLocal && cd ..
 cd lichess-bigquery && sbt compile
 sudo apt-get install zstd -y
+sudo apt install python3-pip -y
+pip install -r requirements.txt
 ```
 
 `setsid nohup sbt run &`
+`nohup python3 -u split_pgn.py &`
 
 ## Games without moves
 
