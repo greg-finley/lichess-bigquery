@@ -1,10 +1,17 @@
 import os
+from dataclasses import dataclass
 
-from google.cloud import storage
+import requests
+from google.cloud import bigquery, storage
 
-variant = "threeCheck"
-year_month_start_inclusive = "2014-07"
-year_month_end_inclusive = "2014-07"
+
+@dataclass
+class VariantYearMonth:
+    variant: str
+    year_month: str
+
+
+variants = ["atomic"]
 
 storage_client = storage.Client()
 bucket = storage_client.bucket("lichess-bigquery-pgn")
@@ -16,7 +23,12 @@ def os_run(command: str):
         raise Exception(f"Error with {command}")
 
 
-def split_pgn(variant: str, year_month: str):
+def split_pgn(variant_year_month: VariantYearMonth):
+    variant = variant_year_month.variant
+    year_month = variant_year_month.year_month
+
+    print(f"Splitting {variant} {year_month}")
+
     os_run(
         f"curl https://database.lichess.org/{variant}/lichess_db_{variant}_rated_{year_month}.pgn.zst --output lichess_db_{variant}_rated_{year_month}.pgn.zst"
     )
@@ -60,19 +72,32 @@ def split_pgn(variant: str, year_month: str):
         os_run(f"rm {file_name}")
 
 
-for year_month in [
-    f"{year}-{month:02d}"
-    for year in range(
-        int(year_month_start_inclusive.split("-")[0]),
-        int(year_month_end_inclusive.split("-")[0]) + 1,
-    )
-    for month in range(1, 13)
-]:
-    if (
-        year_month >= year_month_start_inclusive
-        and year_month <= year_month_end_inclusive
-    ):
-        print(f"Splitting {variant} {year_month}")
-        split_pgn(variant, year_month)
+for variant in variants:
+    response = requests.get(f"https://database.lichess.org/{variant}/list.txt")
+    assert response.status_code == 200
+    # https://database.lichess.org/antichess/lichess_db_antichess_rated_2023-01.pgn.zst
+    files: list[VariantYearMonth] = [
+        VariantYearMonth(
+            variant=item.split("_")[2],
+            year_month=item.split("_")[4].split(".")[0],
+        )
+        for item in response.text.split("\n")
+        if item != ""
+    ]
+    existing_tables: list[VariantYearMonth] = [
+        VariantYearMonth(
+            variant=table.table_id.split("_")[1],
+            year_month=table.table_id.split("_")[2]
+            + "-"
+            + table.table_id.split("_")[3],
+        )
+        for table in bigquery.Client().list_tables("lichess", max_results=100000)
+        if table.table_id.startswith("games_")
+    ]
+    files = [file for file in files if file not in existing_tables]
+    print(files)
+
+    for file in files:
+        split_pgn(file)
 
 print("Done")
