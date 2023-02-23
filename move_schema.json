@@ -1,9 +1,0 @@
-[
-  { "name": "san", "type": "STRING", "mode": "REQUIRED" },
-  { "name": "clock", "type": "STRING", "mode": "NULLABLE" },
-  { "name": "eval", "type": "STRING", "mode": "NULLABLE" },
-  { "name": "ply", "type": "INTEGER", "mode": "REQUIRED" },
-  { "name": "uci", "type": "STRING", "mode": "REQUIRED" },
-  { "name": "fen", "type": "STRING", "mode": "REQUIRED" },
-  { "name": "GameId", "type": "STRING", "mode": "REQUIRED" }
-]
