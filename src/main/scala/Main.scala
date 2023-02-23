@@ -283,9 +283,9 @@ class MessageReceiverImpl extends MessageReceiver {
       monthYear = name.split("_")(4).split("\\.")(0)
     )
     copyGcsFileToLocal(bucket, name, name)
-    parseFile(variantMonthYear)
+    parseFile(variantMonthYear, name)
     writeToBigQuery(variantMonthYear)
-    deletePgnFile(variantMonthYear)
+    deletePgnFile(name)
     deleteGcsFile(bucket, name)
 
     println("Acknowledging message")
@@ -293,12 +293,10 @@ class MessageReceiverImpl extends MessageReceiver {
   }
 }
 
-def parseFile(variantMonthYear: VariantMonthYear): Unit =
+def parseFile(variantMonthYear: VariantMonthYear, sourceFile: String): Unit =
   println(s"Parsing ${variantMonthYear}")
   val source =
-    scala.io.Source.fromFile(
-      s"lichess_db_${variantMonthYear.variant}_rated_${variantMonthYear.monthYear}.pgn"
-    )
+    scala.io.Source.fromFile(sourceFile)
   val lines: ListBuffer[String] = ListBuffer()
   val gamesFile =
     new File(
@@ -543,12 +541,10 @@ def writeToBigQuery(variantMonthYear: VariantMonthYear) = {
   Await.result(gamesFuture, Duration.Inf)
 }
 
-def deletePgnFile(variantMonthYear: VariantMonthYear) =
-  val pgnName =
-    s"lichess_db_${variantMonthYear.variant}_rated_${variantMonthYear.monthYear}.pgn"
+def deletePgnFile(name: String) =
   val rmExitCode =
-    s"rm ${pgnName}".!
+    s"rm ${name}".!
   if (rmExitCode != 0) {
-    println(s"Failed to remove PGN ${variantMonthYear}")
+    println(s"Failed to remove PGN ${name}")
     sys.exit(1)
   }
