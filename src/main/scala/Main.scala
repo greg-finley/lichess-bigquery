@@ -27,7 +27,7 @@ import scala.concurrent.duration.Duration
 import sys.process._
 
 import BigQueryLoader.loadCSVToBigQuery
-import GcsFileManager.{copyFileToGcs, deleteGcsFile}
+import GcsFileManager.{copyFileToGcs, copyGcsFileToLocal, deleteGcsFile}
 import PubSubSubscriber.getSubscriber
 
 import com.google.cloud.bigquery.{Field, Schema, TableId, StandardSQLTypeName}
@@ -278,7 +278,17 @@ class MessageReceiverImpl extends MessageReceiver {
     println(
       s"Received message with ID ${message.getMessageId}: name=$name, bucket=$bucket"
     )
+    val variantMonthYear = VariantMonthYear(
+      variant = name.split("_")(2),
+      monthYear = name.split("_")(4).split("\\.")(0)
+    )
+    copyGcsFileToLocal(bucket, name, name)
+    parseFile(variantMonthYear)
+    writeToBigQuery(variantMonthYear)
+    deletePgnFile(variantMonthYear)
+    deleteGcsFile(bucket, name)
 
+    println("Acknowledging message")
     consumer.ack()
   }
 }

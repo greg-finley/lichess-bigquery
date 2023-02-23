@@ -2,9 +2,9 @@ import os
 
 from google.cloud import storage
 
-variant = "antichess"
-year_month_start_inclusive = "2016-04"
-year_month_end_inclusive = "2023-01"
+variant = "threeCheck"
+year_month_start_inclusive = "2014-07"
+year_month_end_inclusive = "2014-07"
 
 storage_client = storage.Client()
 bucket = storage_client.bucket("lichess-bigquery-pgn")
@@ -25,14 +25,14 @@ def split_pgn(variant: str, year_month: str):
 
     os_run(f"rm lichess_db_{variant}_rated_{year_month}.pgn.zst")
 
-    # Write to smaller files in 2000-game chunks, the first file being
-    # lichess_db_threeCheck_rated_2014-08_0001.pgn
+    # Write to smaller files in 200000-game chunks, the first file being
+    # lichess_db_threeCheck_rated_2014-08_00001.pgn
 
     num_games = 0
-    games_per_file = 2000
+    games_per_file = 200000
     current_file_index = 1
     current_file_name = (
-        f"lichess_db_{variant}_rated_{year_month}_{current_file_index:04d}.pgn"
+        f"lichess_db_{variant}_rated_{year_month}_{current_file_index:05d}.pgn"
     )
     current_file = open(current_file_name, "w")
 

@@ -17,6 +17,16 @@ object GcsFileManager {
     storage.createFrom(blobInfo, Paths.get(localFilePath));
   }
 
+  def copyGcsFileToLocal(
+      bucketName: String,
+      blobName: String,
+      localFilePath: String
+  ): Unit = {
+    val storage = StorageOptions.getDefaultInstance().getService()
+    val blob = storage.get(bucketName, blobName)
+    blob.downloadTo(Paths.get(localFilePath))
+  }
+
   def deleteGcsFile(bucketName: String, blobName: String): Unit = {
     val storage = StorageOptions.getDefaultInstance().getService()
     val blob = storage.get(bucketName, blobName)

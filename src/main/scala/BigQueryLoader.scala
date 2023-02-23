@@ -23,7 +23,7 @@ object BigQueryLoader {
       .newBuilder(tableId, gcsPath)
       .setSchema(schema)
       .setFormatOptions(formatOptions)
-      .setWriteDisposition(WriteDisposition.WRITE_EMPTY)
+      .setWriteDisposition(WriteDisposition.WRITE_APPEND)
       .setCreateDisposition(CreateDisposition.CREATE_IF_NEEDED)
       .build()
 
