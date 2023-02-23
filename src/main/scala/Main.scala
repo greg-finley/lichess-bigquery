@@ -10,6 +10,8 @@ import chess.MoveOrDrop.*
 import com.google.cloud.bigquery.BigQueryOptions
 import sttp.client3._
 
+import io.circe._, io.circe.parser._
+
 import java.time.LocalDateTime
 import java.io._
 import collection.convert.ImplicitConversionsToScala.*
@@ -25,8 +27,13 @@ import scala.concurrent.duration.Duration
 import sys.process._
 
 import BigQueryLoader.loadCSVToBigQuery
-import GcsFileUploader.{copyFileToGcs, deleteGcsFile}
+import GcsFileManager.{copyFileToGcs, deleteGcsFile}
+import PubSubSubscriber.getSubscriber
+
 import com.google.cloud.bigquery.{Field, Schema, TableId, StandardSQLTypeName}
+import com.google.cloud.pubsub.v1.MessageReceiver
+import com.google.cloud.pubsub.v1.AckReplyConsumer
+import com.google.pubsub.v1.PubsubMessage
 
 // TODO: Make a proper enum
 val variants = List(
@@ -236,30 +243,45 @@ val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
 )
 
 @main def main: Unit =
-  val existingBigQueryTablesFuture = getExistingBigQueryTables()
-  for (variant <- variants) {
-    getLichessFileList(variant)
-      .split("\n")
-      .map(x =>
-        VariantMonthYear(
-          variant,
-          x.split("_")(4).split("\\.")(0)
+  val messageReceiver = new MessageReceiverImpl()
+  val subscriber = getSubscriber(messageReceiver)
+  subscriber.startAsync().awaitRunning()
+  subscriber.awaitTerminated()
+
+class MessageReceiverImpl extends MessageReceiver {
+  override def receiveMessage(
+      message: PubsubMessage,
+      consumer: AckReplyConsumer
+  ): Unit = {
+    val jsonStr = message.getData.toStringUtf8
+    val json = parse(jsonStr) match {
+      case Left(error) =>
+        throw new RuntimeException(
+          s"Failed to parse message as JSON: ${error.getMessage}"
         )
-      )
-      .map(variantMonthYear => {
-        val existingBigQueryTables =
-          Await.result(existingBigQueryTablesFuture, Duration.Inf)
-        if (
-          !existingBigQueryTables
-            .contains(variantMonthYear)
-        ) {
-          downloadAndUnzipZstFile(variantMonthYear)
-          parseFile(variantMonthYear)
-          writeToBigQuery(variantMonthYear)
-          deletePgnFile(variantMonthYear)
-        }
-      })
+      case Right(value) => value
+    }
+    val name = json.hcursor.downField("name").as[String] match {
+      case Left(error) =>
+        throw new RuntimeException(
+          s"Failed to parse name from message: ${error.getMessage}"
+        )
+      case Right(value) => value
+    }
+    val bucket = json.hcursor.downField("bucket").as[String] match {
+      case Left(error) =>
+        throw new RuntimeException(
+          s"Failed to parse bucket from message: ${error.getMessage}"
+        )
+      case Right(value) => value
+    }
+    println(
+      s"Received message with ID ${message.getMessageId}: name=$name, bucket=$bucket"
+    )
+
+    consumer.ack()
   }
+}
 
 def parseFile(variantMonthYear: VariantMonthYear): Unit =
   println(s"Parsing ${variantMonthYear}")
@@ -313,19 +335,6 @@ def parseFile(variantMonthYear: VariantMonthYear): Unit =
   moveWriter.close()
 
 val SCORES = List("1-0\n", "0-1\n", "1/2-1/2\n")
-
-def getExistingBigQueryTables(): Future[Set[VariantMonthYear]] = {
-  Future(
-    BigQueryOptions.getDefaultInstance.getService
-      .getDataset("lichess")
-      .list()
-      .iterateAll()
-      .map(_.getTableId.getTable)
-      .map(_.split("_"))
-      .map(arr => VariantMonthYear(arr(1), arr(2) + "-" + arr(3)))
-      .toSet
-  )
-}
 
 def customParseMoves(movesStr: String): List[(String, String, String)] = {
   var moves: List[(String, String, String)] = List()
@@ -477,46 +486,6 @@ def processGame(
     )
 }
 
-def getLichessFileList(variant: String): String =
-  // TODO: Make this async
-  val request = basicRequest.get(
-    uri"https://database.lichess.org/${variant}/list.txt"
-  )
-
-  val backend = HttpClientSyncBackend()
-  request
-    .send(backend)
-    .body match {
-    case Left(error) =>
-      println(s"Error: $error")
-      sys.exit(1)
-    case Right(body) => body
-  }
-
-def downloadAndUnzipZstFile(variantMonthYear: VariantMonthYear) =
-  // TODO: Download Standard variant from torrent instead
-  println(s"Downloading ${variantMonthYear}")
-  val zstName =
-    s"lichess_db_${variantMonthYear.variant}_rated_${variantMonthYear.monthYear}.pgn.zst"
-  val curlExitCode =
-    s"curl https://database.lichess.org/${variantMonthYear.variant}/${zstName} --output ${zstName}".!
-  if (curlExitCode != 0) {
-    println(s"Failed to download ${variantMonthYear}")
-    sys.exit(1)
-  }
-  val unzipExitCode =
-    s"pzstd -d ${zstName}".!
-  if (unzipExitCode != 0) {
-    println(s"Failed to unzip ${variantMonthYear}")
-    sys.exit(1)
-  }
-  val rmExitCode =
-    s"rm ${zstName}".!
-  if (rmExitCode != 0) {
-    println(s"Failed to remove ZST ${variantMonthYear}")
-    sys.exit(1)
-  }
-
 def writeToBigQuery(variantMonthYear: VariantMonthYear) = {
   println(s"Writing to BigQuery ${variantMonthYear}")
   val tableNameSuffix =
@@ -525,7 +494,7 @@ def writeToBigQuery(variantMonthYear: VariantMonthYear) = {
   val bucketName = "lichess-bigquery"
 
   val movesFuture = Future {
-    GcsFileUploader.copyFileToGcs(
+    GcsFileManager.copyFileToGcs(
       bucketName,
       "moves.csv",
       f"moves${tableNameSuffix}.csv"
@@ -536,14 +505,14 @@ def writeToBigQuery(variantMonthYear: VariantMonthYear) = {
       moveSchema,
       f"gs://${bucketName}/moves${tableNameSuffix}.csv"
     )
-    GcsFileUploader.deleteGcsFile(
+    GcsFileManager.deleteGcsFile(
       bucketName,
       f"moves${tableNameSuffix}.csv"
     )
   )
 
   val gamesFuture = Future {
-    GcsFileUploader.copyFileToGcs(
+    GcsFileManager.copyFileToGcs(
       bucketName,
       "games.csv",
       f"games${tableNameSuffix}.csv"
@@ -554,7 +523,7 @@ def writeToBigQuery(variantMonthYear: VariantMonthYear) = {
       gameSchema,
       f"gs://${bucketName}/games${tableNameSuffix}.csv"
     )
-    GcsFileUploader.deleteGcsFile(
+    GcsFileManager.deleteGcsFile(
       bucketName,
       f"games${tableNameSuffix}.csv"
     )

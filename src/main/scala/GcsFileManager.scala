@@ -4,7 +4,7 @@ import com.google.cloud.storage._
 import java.nio.file.{Paths, StandardOpenOption}
 import java.nio.ByteBuffer
 
-object GcsFileUploader {
+object GcsFileManager {
   def copyFileToGcs(
       bucketName: String,
       localFilePath: String,
