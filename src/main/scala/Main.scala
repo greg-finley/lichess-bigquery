@@ -278,7 +278,7 @@ class MessageReceiverImpl extends MessageReceiver {
     deletePgnFile(name)
 
     val bigQueryTableNameSuffix =
-      s"${variantMonthYear.variant}_${variantMonthYear.monthYear.replace("-", "_")}"
+      s"_${variantMonthYear.variant}_${variantMonthYear.monthYear.replace("-", "_")}"
     val tableNameSuffix =
       s"${bigQueryTableNameSuffix}_${variantMonthYear.suffix}"
 
