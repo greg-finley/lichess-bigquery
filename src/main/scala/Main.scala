@@ -229,6 +229,8 @@ val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
   "Annotator" -> null
 )
 
+val bucketName = "lichess-bigquery"
+
 @main def main: Unit =
   val messageReceiver = new MessageReceiverImpl()
   val subscriber = getSubscriber(messageReceiver)
@@ -272,9 +274,32 @@ class MessageReceiverImpl extends MessageReceiver {
     copyGcsFileToLocal(bucket, name, name)
     parseFile(variantMonthYear, name)
     deletePgnFile(name)
+
+    val tableNameSuffix =
+      s"_${variantMonthYear.variant}_${variantMonthYear.monthYear.replace("-", "_")}"
+
+    val writeMovesToGcsFuture = Future {
+      GcsFileManager.copyFileToGcs(
+        bucketName,
+        "moves.csv",
+        f"moves${tableNameSuffix}.csv"
+      )
+    }
+
+    val writeGamesToGcsFuture = Future {
+      GcsFileManager.copyFileToGcs(
+        bucketName,
+        "games.csv",
+        f"games${tableNameSuffix}.csv"
+      )
+    }
+
+    Await.result(writeMovesToGcsFuture, Duration.Inf)
+    Await.result(writeGamesToGcsFuture, Duration.Inf)
+
     // Do the BQ stuff async so we can ack the message faster. If this fails, we will see the file in GCS still
     Future {
-      writeToBigQuery(variantMonthYear)
+      writeToBigQuery(tableNameSuffix)
       deleteGcsFile(bucket, name)
     }
 
@@ -484,20 +509,10 @@ def processGame(
     )
 }
 
-def writeToBigQuery(variantMonthYear: VariantMonthYear) = {
-  println(s"Writing to BigQuery ${variantMonthYear}")
-  val tableNameSuffix =
-    s"_${variantMonthYear.variant}_${variantMonthYear.monthYear.replace("-", "_")}"
-
-  val bucketName = "lichess-bigquery"
+def writeToBigQuery(tableNameSuffix: String) = {
+  println(s"Writing to BigQuery ${tableNameSuffix}")
 
   val movesFuture = Future {
-    GcsFileManager.copyFileToGcs(
-      bucketName,
-      "moves.csv",
-      f"moves${tableNameSuffix}.csv"
-    )
-  }.map(_ =>
     BigQueryLoader.loadCSVToBigQuery(
       TableId.of("greg-finley", "lichess", s"moves${tableNameSuffix}"),
       moveSchema,
@@ -507,15 +522,9 @@ def writeToBigQuery(variantMonthYear: VariantMonthYear) = {
       bucketName,
       f"moves${tableNameSuffix}.csv"
     )
-  )
+  }
 
   val gamesFuture = Future {
-    GcsFileManager.copyFileToGcs(
-      bucketName,
-      "games.csv",
-      f"games${tableNameSuffix}.csv"
-    )
-  }.map(_ =>
     BigQueryLoader.loadCSVToBigQuery(
       TableId.of("greg-finley", "lichess", s"games${tableNameSuffix}"),
       gameSchema,
@@ -525,7 +534,7 @@ def writeToBigQuery(variantMonthYear: VariantMonthYear) = {
       bucketName,
       f"games${tableNameSuffix}.csv"
     )
-  )
+  }
 
   Await.result(movesFuture, Duration.Inf)
   Await.result(gamesFuture, Duration.Inf)
