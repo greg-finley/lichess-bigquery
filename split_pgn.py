@@ -82,6 +82,15 @@ def split_pgn(variant_year_month: VariantYearMonth):
         os_run(f"rm {file_name}")
 
 
+existing_tables: list[VariantYearMonth] = [
+    VariantYearMonth(
+        variant=table.table_id.split("_")[1],
+        year_month=table.table_id.split("_")[2] + "-" + table.table_id.split("_")[3],
+    )
+    for table in bigquery.Client().list_tables("lichess", max_results=100000)
+    if table.table_id.startswith("games_")
+]
+
 for variant in variants:
     response = requests.get(f"https://database.lichess.org/{variant}/list.txt")
     assert response.status_code == 200
@@ -94,16 +103,7 @@ for variant in variants:
         for item in response.text.split("\n")
         if item != ""
     ]
-    existing_tables: list[VariantYearMonth] = [
-        VariantYearMonth(
-            variant=table.table_id.split("_")[1],
-            year_month=table.table_id.split("_")[2]
-            + "-"
-            + table.table_id.split("_")[3],
-        )
-        for table in bigquery.Client().list_tables("lichess", max_results=100000)
-        if table.table_id.startswith("games_")
-    ]
+
     files = [file for file in files if file not in existing_tables]
     print(files)
 
