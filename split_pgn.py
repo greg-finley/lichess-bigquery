@@ -19,7 +19,7 @@ variants = [
     "horde",
     "kingOfTheHill",
     "racingKings",
-    # "standard",
+    "standard",
     "threeCheck",
 ]
 
@@ -80,6 +80,8 @@ def split_pgn(variant_year_month: VariantYearMonth):
         print(f"Uploading {file_name}")
         blob.upload_from_filename(file_name)
         os_run(f"rm {file_name}")
+
+    raise Exception("Did one file")
 
 
 existing_tables: list[VariantYearMonth] = [
