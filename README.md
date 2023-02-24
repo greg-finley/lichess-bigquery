@@ -58,6 +58,29 @@ pip install -r requirements.txt
 `setsid nohup sbt run &`
 `nohup python3 -u split_pgn.py &`
 
+Clone an existing VM
+
+```
+gcloud compute disks create lichess-night-night2 --project=greg-finley --type=pd-balanced --size=20GB --zone=europe-west6-a --source-disk=projects/greg-finley/zones/europe-west6-a/disks/lichess-night-night
+
+gcloud compute instances create lichess-night-night2 \
+    --project=greg-finley \
+    --zone=europe-west6-a \
+    --machine-type=e2-highcpu-8 \
+    --network-interface=network-tier=PREMIUM,subnet=default \
+    --maintenance-policy=MIGRATE \
+    --provisioning-model=STANDARD \
+    --service-account=bigquery@greg-finley.iam.gserviceaccount.com \
+    --scopes=https://www.googleapis.com/auth/cloud-platform \
+    --disk=auto-delete=yes,boot=yes,device-name=lichess-night-night2,mode=rw,name=lichess-night-night2 \
+    --no-shielded-secure-boot \
+    --shielded-vtpm \
+    --shielded-integrity-monitoring \
+    --reservation-affinity=any
+
+gcloud compute ssh --zone "europe-west6-a" "lichess-night-night2"  --project "greg-finley"
+```
+
 ## Games without moves
 
 ```sql
