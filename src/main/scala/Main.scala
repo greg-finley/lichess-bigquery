@@ -302,7 +302,7 @@ class MessageReceiverImpl extends MessageReceiver {
     // Do the BQ stuff async so we can ack the message faster. If this fails, we will see the file in GCS still
     Future {
       writeToBigQuery(tableNameSuffix)
-      deleteGcsFile(bucket, name)
+      // deleteGcsFile(bucket, name)
     }
 
     println("Acknowledging message")
@@ -520,10 +520,10 @@ def writeToBigQuery(tableNameSuffix: String) = {
       moveSchema,
       f"gs://${bucketName}/moves${tableNameSuffix}.csv"
     )
-    GcsFileManager.deleteGcsFile(
-      bucketName,
-      f"moves${tableNameSuffix}.csv"
-    )
+    // GcsFileManager.deleteGcsFile(
+    //   bucketName,
+    //   f"moves${tableNameSuffix}.csv"
+    // )
   }
 
   val gamesFuture = Future {
@@ -532,10 +532,10 @@ def writeToBigQuery(tableNameSuffix: String) = {
       gameSchema,
       f"gs://${bucketName}/games${tableNameSuffix}.csv"
     )
-    GcsFileManager.deleteGcsFile(
-      bucketName,
-      f"games${tableNameSuffix}.csv"
-    )
+    // GcsFileManager.deleteGcsFile(
+    //   bucketName,
+    //   f"games${tableNameSuffix}.csv"
+    // )
   }
 
   Await.result(movesFuture, Duration.Inf)
