@@ -191,7 +191,8 @@ val gameSchema = Schema.of(
 
 case class VariantMonthYear(
     variant: String,
-    monthYear: String
+    monthYear: String,
+    suffix: String
 )
 
 // Freeze the list and ignore any future tags, so BigQuery has a consistent schema
@@ -269,14 +270,15 @@ class MessageReceiverImpl extends MessageReceiver {
     )
     val variantMonthYear = VariantMonthYear(
       variant = name.split("_")(2),
-      monthYear = name.split("_")(4).split("\\.")(0)
+      monthYear = name.split("_")(4).split("\\.")(0),
+      suffix = name.split("_")(5).split("\\.")(0)
     )
     copyGcsFileToLocal(bucket, name, name)
     parseFile(variantMonthYear, name)
     deletePgnFile(name)
 
     val tableNameSuffix =
-      s"_${variantMonthYear.variant}_${variantMonthYear.monthYear.replace("-", "_")}"
+      s"_${variantMonthYear.variant}_${variantMonthYear.monthYear.replace("-", "_")}_${variantMonthYear.suffix}"
 
     val writeMovesToGcsFuture = Future {
       GcsFileManager.copyFileToGcs(
