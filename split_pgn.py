@@ -11,7 +11,17 @@ class VariantYearMonth:
     year_month: str
 
 
-variants = ["atomic"]
+variants = [
+    "atomic",
+    "antichess",
+    "chess960",
+    "crazyhouse",
+    "horde",
+    "kingOfTheHill",
+    "racingKings",
+    # "standard",
+    "threeCheck",
+]
 
 storage_client = storage.Client()
 bucket = storage_client.bucket("lichess-bigquery-pgn")

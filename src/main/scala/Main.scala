@@ -35,19 +35,6 @@ import com.google.cloud.pubsub.v1.MessageReceiver
 import com.google.cloud.pubsub.v1.AckReplyConsumer
 import com.google.pubsub.v1.PubsubMessage
 
-// TODO: Make a proper enum
-val variants = List(
-  "antichess",
-  "atomic",
-  "chess960",
-  "crazyhouse",
-  "horde",
-  "kingOfTheHill",
-  "racingKings",
-  // "standard",
-  "threeCheck"
-)
-
 val moveSchema = Schema.of(
   Field
     .newBuilder("san", StandardSQLTypeName.STRING)
