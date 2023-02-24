@@ -66,7 +66,7 @@ def split_pgn(variant_year_month: VariantYearMonth):
                 if num_games % games_per_file == 0:
                     current_file.close()
                     current_file_index += 1
-                    current_file_name = f"lichess_db_{variant}_rated_{year_month}_{current_file_index:04d}.pgn"
+                    current_file_name = f"lichess_db_{variant}_rated_{year_month}_{current_file_index:05d}.pgn"
                     current_file = open(current_file_name, "w")
 
     if num_games % games_per_file != 0:
