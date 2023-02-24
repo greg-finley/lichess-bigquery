@@ -438,7 +438,7 @@ def processGame(
   gameWriter.println(
     gameTagValues.toSeq
       .map { case (_, value) =>
-        Option(value).getOrElse("")
+        s""""${Option(value).getOrElse("")}""""
       }
       .foldLeft("") { (acc, value) =>
         if (acc.isEmpty) value else acc + "," + value
