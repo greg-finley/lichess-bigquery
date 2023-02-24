@@ -32,6 +32,8 @@ This library exposes the [Lichess database](https://database.lichess.org/) as pu
 
 ## Setting up a VM to run this script
 
+Set up Scala machine
+
 ```
 sudo apt-get update
 sudo apt-get install apt-transport-https curl gnupg -yqq
@@ -50,12 +52,20 @@ git clone https://github.com/ornicar/scalalib.git
 cd scalalib && sbt publishLocal && cd ..
 cd scalachess && sbt publishLocal && cd ..
 cd lichess-bigquery && sbt compile
-sudo apt-get install zstd -y
-sudo apt install python3-pip -y
-pip install -r requirements.txt
 ```
 
 `setsid nohup sbt run &`
+
+Set up Python machine
+
+```
+sudo apt-get update
+sudo apt-get install python3-distutils git zstd -y
+git clone https://github.com/greg-finley/lichess-bigquery
+sudo apt install python3-pip -y
+cd lichess-bigquery && pip install -r requirements.txt
+```
+
 `nohup python3 -u split_pgn.py &`
 
 Clone an existing VM
@@ -64,21 +74,21 @@ Clone an existing VM
 gcloud compute disks create lichess-night-night2 --project=greg-finley --type=pd-balanced --size=20GB --zone=europe-west6-a --source-disk=projects/greg-finley/zones/europe-west6-a/disks/lichess-night-night
 
 gcloud compute instances create lichess-night-night2 \
-    --project=greg-finley \
-    --zone=europe-west6-a \
-    --machine-type=e2-highcpu-8 \
-    --network-interface=network-tier=PREMIUM,subnet=default \
-    --maintenance-policy=MIGRATE \
-    --provisioning-model=STANDARD \
-    --service-account=bigquery@greg-finley.iam.gserviceaccount.com \
-    --scopes=https://www.googleapis.com/auth/cloud-platform \
-    --disk=auto-delete=yes,boot=yes,device-name=lichess-night-night2,mode=rw,name=lichess-night-night2 \
-    --no-shielded-secure-boot \
-    --shielded-vtpm \
-    --shielded-integrity-monitoring \
-    --reservation-affinity=any
+ --project=greg-finley \
+ --zone=europe-west6-a \
+ --machine-type=e2-highcpu-8 \
+ --network-interface=network-tier=PREMIUM,subnet=default \
+ --maintenance-policy=MIGRATE \
+ --provisioning-model=STANDARD \
+ --service-account=bigquery@greg-finley.iam.gserviceaccount.com \
+ --scopes=https://www.googleapis.com/auth/cloud-platform \
+ --disk=auto-delete=yes,boot=yes,device-name=lichess-night-night2,mode=rw,name=lichess-night-night2 \
+ --no-shielded-secure-boot \
+ --shielded-vtpm \
+ --shielded-integrity-monitoring \
+ --reservation-affinity=any
 
-gcloud compute ssh --zone "europe-west6-a" "lichess-night-night2"  --project "greg-finley"
+gcloud compute ssh --zone "europe-west6-a" "lichess-night-night2" --project "greg-finley"
 ```
 
 ## Games without moves
