@@ -7,9 +7,9 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-chess = "^1.9.4"
 google-cloud-storage = "^2.7.0"
 google-cloud-bigquery = "^3.5.0"
+torrentp = "^0.1.5"
 
 [tool.poetry.dev-dependencies]
 

@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 import requests
 from google.cloud import bigquery, storage
+from torrentp import TorrentDownloader  # type: ignore
 
 
 @dataclass
