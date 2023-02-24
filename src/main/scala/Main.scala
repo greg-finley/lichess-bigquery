@@ -271,9 +271,12 @@ class MessageReceiverImpl extends MessageReceiver {
     )
     copyGcsFileToLocal(bucket, name, name)
     parseFile(variantMonthYear, name)
-    writeToBigQuery(variantMonthYear)
     deletePgnFile(name)
-    deleteGcsFile(bucket, name)
+    // Do the BQ stuff async so we can ack the message faster. If this fails, we will see the file in GCS still
+    Future {
+      writeToBigQuery(variantMonthYear)
+      deleteGcsFile(bucket, name)
+    }
 
     println("Acknowledging message")
     consumer.ack()
