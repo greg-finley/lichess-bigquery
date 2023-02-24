@@ -277,8 +277,10 @@ class MessageReceiverImpl extends MessageReceiver {
     parseFile(variantMonthYear, name)
     deletePgnFile(name)
 
+    val bigQueryTableNameSuffix =
+      s"${variantMonthYear.variant}_${variantMonthYear.monthYear.replace("-", "_")}"
     val tableNameSuffix =
-      s"_${variantMonthYear.variant}_${variantMonthYear.monthYear.replace("-", "_")}_${variantMonthYear.suffix}"
+      s"${bigQueryTableNameSuffix}_${variantMonthYear.suffix}"
 
     val writeMovesToGcsFuture = Future {
       GcsFileManager.copyFileToGcs(
@@ -301,7 +303,7 @@ class MessageReceiverImpl extends MessageReceiver {
 
     // Do the BQ stuff async so we can ack the message faster. If this fails, we will see the file in GCS still
     Future {
-      writeToBigQuery(tableNameSuffix)
+      writeToBigQuery(tableNameSuffix, bigQueryTableNameSuffix)
       deleteGcsFile(bucket, name)
     }
 
@@ -511,12 +513,15 @@ def processGame(
     )
 }
 
-def writeToBigQuery(tableNameSuffix: String) = {
+def writeToBigQuery(
+    tableNameSuffix: String,
+    bigQueryTableNameSuffix: String
+) = {
   println(s"Writing to BigQuery ${tableNameSuffix}")
 
   val movesFuture = Future {
     BigQueryLoader.loadCSVToBigQuery(
-      TableId.of("greg-finley", "lichess", s"moves${tableNameSuffix}"),
+      TableId.of("greg-finley", "lichess", s"moves${bigQueryTableNameSuffix}"),
       moveSchema,
       f"gs://${bucketName}/moves${tableNameSuffix}.csv"
     )
@@ -528,7 +533,7 @@ def writeToBigQuery(tableNameSuffix: String) = {
 
   val gamesFuture = Future {
     BigQueryLoader.loadCSVToBigQuery(
-      TableId.of("greg-finley", "lichess", s"games${tableNameSuffix}"),
+      TableId.of("greg-finley", "lichess", s"games${bigQueryTableNameSuffix}"),
       gameSchema,
       f"gs://${bucketName}/games${tableNameSuffix}.csv"
     )
