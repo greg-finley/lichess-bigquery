@@ -548,9 +548,9 @@ def writeToBigQuery(
 }
 
 def deletePgnFile(name: String) =
-  val rmExitCode =
-    s"rm ${name}".!
-  if (rmExitCode != 0) {
-    println(s"Failed to remove PGN ${name}")
+  if (new File(name).delete()) {
+    println(s"Deleted ${name}")
+  } else {
+    println(s"Failed to delete ${name}")
     sys.exit(1)
   }
