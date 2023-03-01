@@ -9,3 +9,8 @@ lazy val root = (project in file("."))
       "org.lichess" %% "scalachess" % "14.5.4"
     )
   )
+
+lazy val parsePgn = taskKey[Unit]("Parse PGN files")
+parsePgn := {
+  (runMain in Compile).toTask(" ParsePgn").value
+}
