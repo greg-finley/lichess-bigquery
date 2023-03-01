@@ -21,14 +21,13 @@ import sys.process._
 
 object ParsePgn {
   def main(args: Array[String]): Unit = {
+    val variant = "chess960"
+    val monthYear = "2023-01"
     val source =
-      scala.io.Source.fromFile("lichess_db_chess960_rated_2023-01.pgn")
+      scala.io.Source.fromFile(s"lichess_db_${variant}_rated_${monthYear}.pgn")
     val lines: ListBuffer[String] = ListBuffer()
-    val gamesFile =
-      new File(
-        "games.csv"
-      ) // if parallelizing this job more, rename this to include variant and monthYear
-    val movesFile = new File("moves.csv") // ditto
+    val gamesFile = new File(s"games_${variant}_${monthYear}.csv")
+    val movesFile = new File(s"moves_${variant}_${monthYear}.csv")
     if (gamesFile.exists()) gamesFile.delete()
     if (movesFile.exists()) movesFile.delete()
     val gameWriter = new PrintWriter(new FileWriter(gamesFile, true))
