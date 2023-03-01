@@ -70,8 +70,7 @@ object ParsePgn {
 
   val SCORES = List("1-0\n", "0-1\n", "1/2-1/2\n")
 
-// Freeze the list and ignore any future tags, so BigQuery has a consistent schema
-// Maybe if we get a new tag in the future we can edit the old schemas
+// Freeze the list and ignore any future tags, so we have a consistent schema
   val allTagValues: LinkedHashMap[String, String] = LinkedHashMap(
     "Event" -> null,
     "Site" -> null,
