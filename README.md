@@ -1,5 +1,9 @@
 # lichess-bigquery
 
+## ¯\_(ツ)_/¯
+
+Turns out loading all the moves and games into BigQuery would be possible, but it would cost >$200/month to store and something like $300 to run a single query on all the moves, so giving up.
+
 ## What
 
 This library exposes the [Lichess database](https://database.lichess.org/) as public Google BigQuery tables that anyone can query.
